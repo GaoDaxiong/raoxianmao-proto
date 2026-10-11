@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>绕线猫</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%A7%B6%3C/text%3E%3C/svg%3E">
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#cfe8b4;font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
+  canvas{position:fixed;left:0;top:0;width:100%;height:100%;touch-action:none;display:block;}
+  .ov{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;z-index:5;}
+  .ov.show{display:flex;}
+  #start{background:linear-gradient(#fdf6e9,#f6e7cf);color:#6b4a32;}
+  #start h1{font-size:40px;margin:0 0 10px;letter-spacing:6px;}
+  #start p{margin:4px 24px;font-size:16px;opacity:.85;line-height:1.6;}
+  .btn{margin-top:26px;padding:13px 34px;border-radius:30px;border:none;background:#f29a5b;color:#fff;font-size:18px;font-weight:600;box-shadow:0 4px 0 #d77a3c;font-family:inherit;}
+  .btn:active{transform:translateY(2px);box-shadow:0 2px 0 #d77a3c;}
+  .btn.ghost{background:transparent;color:inherit;box-shadow:none;border:1.5px solid currentColor;opacity:.8;font-weight:500;font-size:15px;padding:9px 22px;margin-top:12px;}
+  #hint{position:fixed;left:0;right:0;bottom:calc(46px + env(safe-area-inset-bottom));text-align:center;z-index:4;pointer-events:none;transition:opacity .8s;opacity:0;}
+  #hint span{display:inline-block;background:rgba(255,250,240,.88);color:#6b4a32;padding:9px 18px;border-radius:20px;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,.08);}
+  #word{justify-content:flex-start;padding-top:62vh;pointer-events:none;color:#fbe9d8;background:transparent;}
+  #word > *{pointer-events:auto;}
+  #msg{min-height:34px;font-size:19px;line-height:1.7;margin:0 28px 6px;white-space:pre-wrap;}
+  #from{font-size:13px;opacity:.6;margin-bottom:8px;}
+  #wordBtns{margin-top:10px;opacity:0;transition:opacity .8s;display:flex;flex-direction:column;align-items:center;}
+  #custom{background:linear-gradient(#fdf6e9,#f3e2c6);color:#6b4a32;justify-content:flex-start;padding-top:calc(48px + env(safe-area-inset-top));overflow-y:auto;}
+  #custom h2{margin:0 0 6px;font-size:24px;}
+  #custom .sub{font-size:14px;opacity:.7;margin-bottom:20px;}
+  .card{background:#fffaf2;border-radius:18px;padding:16px;width:min(86vw,360px);box-sizing:border-box;box-shadow:0 3px 12px rgba(120,80,40,.1);text-align:left;margin-bottom:14px;}
+  .card label{font-size:13px;opacity:.7;display:block;margin-bottom:6px;}
+  .row{display:flex;gap:8px;align-items:center;}
+  #wIn{flex:1;font-size:24px;letter-spacing:4px;text-transform:uppercase;padding:8px 10px;border:2px solid #ecd6b8;border-radius:12px;background:#fff;color:#c2402f;font-family:inherit;min-width:0;}
+  #heartBtn{font-size:22px;width:46px;height:46px;border-radius:12px;border:2px solid #f2b5a8;background:#fff0ec;color:#e0403a;}
+  #mIn{width:100%;box-sizing:border-box;font-size:16px;padding:8px 10px;border:2px solid #ecd6b8;border-radius:12px;resize:none;height:76px;font-family:inherit;}
+  .cnt{font-size:12px;opacity:.55;text-align:right;margin-top:4px;}
+  #linkBox{display:none;}
+  #link{width:100%;box-sizing:border-box;font-size:13px;padding:8px;border:1.5px dashed #e5c9a3;border-radius:10px;background:#fff;color:#7a5a40;}
+  #toast{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);background:rgba(60,40,30,.85);color:#fff;padding:10px 20px;border-radius:12px;font-size:15px;z-index:20;display:none;}
+  .err{color:#d0453a;font-size:13px;min-height:18px;margin-top:4px;}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="hint"><span id="hintText"></span></div>
+
+<div id="start" class="ov">
+  <h1>绕线猫</h1>
+  <p id="startSub">小猫在院子里玩毛线</p>
+  <p id="startSub2" style="font-size:14px;opacity:.65"></p>
+  <button class="btn" id="startBtn">开始</button>
+</div>
+
+<div id="word" class="ov">
+  <div id="msg"></div>
+  <div id="from"></div>
+  <div id="wordBtns">
+    <button class="btn" id="makeBtn">我也写一个</button>
+    <button class="btn ghost" id="replayBtn">重看一遍</button>
+  </div>
+</div>
+
+<div id="custom" class="ov">
+  <h2>写一个词送给 TA</h2>
+  <div class="sub">TA 要先陪小猫玩完，才会看到你写的字</div>
+  <div class="card">
+    <label>你想写的词（字母 A-Z、空格，最多 8 个）</label>
+    <div class="row"><input id="wIn" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="I♥U"><button id="heartBtn">♥</button></div>
+    <div class="err" id="wErr"></div>
+  </div>
+  <div class="card">
+    <label>想说的话（可选）</label>
+    <textarea id="mIn" maxlength="40" placeholder="比如：生日快乐！"></textarea>
+    <div class="cnt"><span id="mCnt">0</span>/40</div>
+  </div>
+  <button class="btn" id="genBtn">生成分享链接</button>
+  <div class="card" id="linkBox" style="margin-top:16px">
+    <label>把这个链接发给 TA</label>
+    <input id="link" readonly>
+    <div class="row" style="margin-top:10px;justify-content:center;gap:10px">
+      <button class="btn" id="copyBtn" style="margin-top:0;padding:10px 22px;font-size:16px">复制链接</button>
+      <button class="btn ghost" id="tryBtn" style="margin-top:0">自己先玩</button>
+    </div>
+  </div>
+  <button class="btn ghost" id="backBtn" style="margin-bottom:40px">返回</button>
+</div>
+<div id="toast"></div>
+
+<script src="js/strokes.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
