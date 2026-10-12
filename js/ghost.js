@@ -232,6 +232,7 @@ function drawEmber(ctx, P, opt = {}) {
     for (let i0 = 0; i0 < n - 1; i0 += CH) {
       const i1 = Math.min(n - 1, i0 + CH), d = (n - 1 - (i0 + i1) / 2) * seg;
       let a = opt.live ? 0.08 + 0.34 * Math.exp(-d / 1.1) : 0.085;
+      if (opt.litTo && i1 <= opt.litTo) a = Math.max(a, 0.16) + 0.04;
       a = lerp(a, 0.42, boost);
       if (ten > 0.3 && opt.live && d < 3) a = Math.min(0.9, a * (1 + ten * 1.4) * flick);
       a *= dim;
