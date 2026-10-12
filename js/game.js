@@ -1,4 +1,4 @@
-// 绕线猫 v2 — game logic + orchestration. World units: letter grid cell = LS units.
+// 南瓜灯小幽灵 v3 (from 绕线猫 v2) — game logic + orchestration. World units: letter grid cell = LS units.
 (() => {
 "use strict";
 const cv = document.getElementById("cv"), ctx = cv.getContext("2d", { alpha: false });
@@ -194,7 +194,9 @@ function hideHint() { $("hint").classList.remove("show"); }
 function hintOnce(key, text, dur) { if (G.hintShown[key]) return; G.hintShown[key] = 1; hint(text, dur); }
 
 function newCat(x, y, dir) {
-  return { x, y, vx: 0, vy: 0, face: "side", flip: dir.x < 0, walk: 0, move: 0, blink: 0, blinkT: 2, ear: 0, ear2: 0, earT: 3, tail: 0, sq: 0, sqv: 0, lean: 0, dustT: 0, stepT: 0, moving: false, tilt: 0, slip: 0 };
+  const d0 = dir.x < 0 ? -0.4 : 0.4;
+  return { x, y, vx: 0, vy: 0, face: "side", flip: dir.x < 0, walk: 0, move: 0, blink: 0, blinkT: 2, sq: 0, sqv: 0, lean: 0, dustT: 0, stepT: 0, moving: false, tilt: 0, slip: 0,
+    dir: d0, dirT: d0, lift: 10, tailX: 8, tailW: 0, swing: 0, swingV: 0, pvx: 0, flick: 1, happyT: 0, mood: "", look: 0, lookY: 0, emberT: 0, endX: 0 };
 }
 function startLevel(i) {
   G.li = i; G.mode = "play";
@@ -207,7 +209,7 @@ function startLevel(i) {
   lv.pegs.forEach(p => { p.ang = 0; p.angv = 0; p.used = false; p.glowA = 0; p.spin = 0; p.wraps = 0; p.cool = 0; p.sink = 0; });
   parts.length = 0; waves.length = 0; winds.length = 0;
   const T = terrainOf(lv); T.ensureScale(Z * DPR); T.prewarm(S.cam, playZ(), W, H, 0.5);
-  if (i === 0) hint("拖动屏幕，带小猫去找会响的铃铛");
+  if (i === 0) hint("拖动屏幕，带小幽灵去找会响的铃铛");
 }
 function activeTarget() {
   const lv = S.lv;
@@ -223,7 +225,9 @@ function panOf(x) { return clamp((screenPos(x, 0, S.cam, playZ()).x - W / 2) / W
 function addP(o) { parts.push(Object.assign({ vx: 0, vy: 0, g: 0, life: 1, max: 1, rot: 0, vr: 0, drag: 0 }, o)); if (parts.length > 260) parts.shift(); }
 function sparkle(x, y, n, col = "#ffe08a", spd = 0.9) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, v = (0.3 + Math.random()) * spd; addP({ k: "spark", x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.7 - 0.3, g: 0.8, drag: 2.2, life: 0.6 + Math.random() * 0.5, max: 1, r: 0.012 + Math.random() * 0.018, col, rot: Math.random(), vr: 4 }); } }
 function notes(x, y, n = 2) { for (let i = 0; i < n; i++) addP({ k: "note", x: x + (Math.random() - 0.5) * 0.2, y: y - 0.25, vx: (Math.random() - 0.5) * 0.3, vy: -0.45, g: -0.1, life: 1.3, max: 1.3, col: "#d99a1e" }); }
-function dust(x, y, n = 1, spd = 0.25) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.283; addP({ k: "dust", x: x + (Math.random() - 0.5) * 0.06, y: y + (Math.random() - 0.5) * 0.02, vx: Math.cos(a) * spd, vy: Math.sin(a) * spd * 0.4 - 0.05, drag: 3, life: 0.5 + Math.random() * 0.3, max: 0.8, r: 0.018 + Math.random() * 0.014 }); } }
+// "dust" = little glowing motes that float up (the ghost has no feet to kick up dirt)
+function dust(x, y, n = 1, spd = 0.25) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.283; addP({ k: "dust", x: x + (Math.random() - 0.5) * 0.08, y: y + (Math.random() - 0.5) * 0.03, vx: Math.cos(a) * spd, vy: Math.sin(a) * spd * 0.4 - 0.08, g: -0.25, drag: 3, life: 0.6 + Math.random() * 0.4, max: 1, r: 0.012 + Math.random() * 0.012 }); } }
+function ember(x, y, sp = 1, a = 1) { addP({ k: "ember", x, y, vx: (Math.random() - 0.5) * 0.14 * sp, vy: -0.1 - Math.random() * 0.16 * sp, g: -0.05, drag: 1.2, life: 0.6 + Math.random() * 0.7, max: 1.3, r: 0.01 + Math.random() * 0.014, rot: Math.random(), a }); }
 function textPop(x, y, text, col, size) { addP({ k: "text", x, y, vy: -0.12, life: 1.8, max: 1.8, text, col, size }); }
 function updateParts(dt) {
   for (let i = parts.length - 1; i >= 0; i--) {
@@ -253,21 +257,21 @@ function ringCheck() {
   else AU.ring(S.ringN++);
   haptic(22);
   waves.push({ x: p.x, y: p.y, t: 0, dur: 1.1, r: 0.7, col: "rgba(255,226,140,A)" }, { x: p.x, y: p.y, t: -0.15, dur: 1.1, r: 0.45, col: "rgba(255,255,255,A)" });
-  sparkle(p.x + 0.11, by, 14); notes(p.x, by, 2);
+  sparkle(p.x + 0.11, by, 14); notes(p.x, by, 2); S.cat.happyT = 1.4;
   S.s = c.arc; S.ci++; S.nearDing = false; S.spillT = 1.8;
   if (G.li === 0 && S.si === 0 && S.ci === 1) hideHint();
   if (S.ci >= st.checks.length) {
     rope.tie(p, c.x, c.y); const k = rope.p[rope.p.length - 1];
-    S.knots.push({ x: k.x, y: k.y + 0.01, t: 0, si: S.si }); AU.knot(); sparkle(k.x, k.y, 8, "#fff6dc", 0.6);
+    S.knots.push({ x: k.x, y: k.y + 0.01, t: 0, si: S.si }); AU.knot(); sparkle(k.x, k.y, 12, "#ffc46a", 0.7); for (let j = 0; j < 6; j++) ember(k.x, k.y, 2.5);
     S.pen = false; S.si++;
-    if (S.si >= lv.strokes.length) { S.allDone = true; hintOnce("basket", "把线头送回毛线篮吧", 2600); }
-    else { S.ballRoll = 0; hintOnce("ball", "小猫打了个结，去找下一团毛线", 2600); }
+    if (S.si >= lv.strokes.length) { S.allDone = true; hintOnce("basket", "把灯火送回大南瓜灯吧", 2600); }
+    else { S.ballRoll = 0; hintOnce("ball", "灯线系好啦，去下一根小蜡烛接新的火苗", 2600); }
   } else { rope.pinAt(p, c.x, c.y); S.hist.push({ s: S.s, ci: S.ci }); }
 }
 function pickUp() {
   const lv = S.lv, st = lv.strokes[S.si]; S.pen = true; S.s = 0; S.ci = 0; S.hist = [{ s: 0, ci: 0 }];
   S.ropes[S.si] = new Rope(st.start.x, st.start.y, SEG, strokeBudget(st));
-  AU.pop(); sparkle(st.start.x, st.start.y - 0.1, 10, "#fff4dc", 0.7); S.nearDing = false; S.ballRoll = -1;
+  AU.pop(); sparkle(st.start.x, st.start.y - 0.12, 12, "#ffcf80", 0.7); for (let j = 0; j < 5; j++) ember(st.start.x, st.start.y - 0.14, 2); S.nearDing = false; S.ballRoll = -1;
 }
 function swat(d) {
   const lv = S.lv, cat = S.cat, rope = S.ropes[S.si];
@@ -281,7 +285,7 @@ function swat(d) {
   cat.vx = dx / l * 2.2; cat.vy = dy / l * 2.2; cat.sq = -0.12; cat.x += dx / l * 0.12; cat.y += dy / l * 0.12;
   dust(cat.x, cat.y, 5, 0.5); S.nearDing = false;
   textPop(d.x + 0.05 * d.face, d.y - 0.3, "呜…Zzz", "#5a6290", 15);
-  hintOnce("dog", "汪！狗狗把线拨掉了一截，绕回去吧", 2400);
+  hintOnce("dog", "汪！狗狗把灯线拨掉了一截，绕回去吧", 2400);
 }
 function levelClear() {
   S.clearT = 0; AU.clear(); AU.setTension(0); hideHint();
@@ -290,30 +294,32 @@ function levelClear() {
 }
 
 // ---------- update ----------
+function flickAt(t) { return 0.84 + 0.16 * (0.5 + 0.5 * Math.sin(t * 11.3) * Math.sin(t * 7.1 + 1.3)); }
+// floating ghost: bob, lean into motion, tail wisp trails behind, lantern swings on its handle
 function animCat(cat, dt, mvx, mvy, tension) {
-  const sp = hyp(mvx, mvy) / Math.max(dt, 1e-4), moving = sp > 0.12;
+  const idt = 1 / Math.max(dt, 1e-4), vx = mvx * idt, vy = mvy * idt, sp = hyp(vx, vy), moving = sp > 0.12;
   const prevMove = cat.move;
   cat.move += ((moving ? clamp(sp / 1.6, 0.35, 1) : 0) - cat.move) * Math.min(1, dt * 10);
-  if (prevMove < 0.3 && cat.move >= 0.3) cat.sqv -= 1.6; // stretch on start
+  if (prevMove < 0.3 && cat.move >= 0.3) cat.sqv -= 1.6; // stretch on take-off
   if (prevMove > 0.3 && cat.move <= 0.3) cat.sqv += 1.8; // squash on stop
-  if (tension > 0.35 && hyp(cat.vx, cat.vy) > 0.2) { cat.face = "side"; cat.flip = cat.vx < 0; }
-  else if (moving) {
-    const ax = Math.abs(mvx), ay = Math.abs(mvy);
-    if (cat.face === "side" ? ay > ax * 1.7 : ax > ay * 1.15) cat.face = ay > ax ? (mvy > 0 ? "front" : "back") : "side";
-    else if (cat.face !== "side") cat.face = mvy > 0 ? "front" : "back";
-    if (ax > 0.0005) cat.flip = mvx < 0;
-    cat.walk += hyp(mvx, mvy) * 12;
-  }
-  if (tension > 0.25) cat.walk += dt * 16 * tension; // paws slip
-  cat.sqv += (-cat.sq * 320 - cat.sqv * 13) * dt; cat.sq += cat.sqv * dt; cat.sq = clamp(cat.sq, -0.18, 0.18);
-  const leanT = cat.face === "side" ? (cat.flip ? -1 : 1) * (0.06 * cat.move + 0.42 * tension) : Math.sin(G.t * 20) * 0.05 * tension;
-  cat.lean += (leanT - cat.lean) * Math.min(1, dt * 8);
-  cat.tail = moving ? Math.sin(cat.walk * 0.25) * 0.35 : Math.sin(G.t * 1.7) * 0.55 + Math.sin(G.t * 0.6) * 0.2;
-  cat.tilt = moving ? 0 : Math.sin(G.t * 0.7) * 0.05;
+  cat.sqv += (-cat.sq * 320 - cat.sqv * 13) * dt; cat.sq += cat.sqv * dt; cat.sq = clamp(cat.sq, -0.16, 0.16);
+  if (moving && Math.abs(vx) > 0.12) cat.dirT = clamp(vx / 1.3, -1, 1);
+  cat.dir += (cat.dirT - cat.dir) * Math.min(1, dt * 6); cat.flip = cat.dir < 0;
+  const leanT = clamp(vx * 0.085, -0.2, 0.2) * cat.move + (tension > 0.2 ? Math.sign(cat.dir || 1) * 0.22 * tension + Math.sin(G.t * 20) * 0.03 * tension : 0);
+  cat.lean += (leanT - cat.lean) * Math.min(1, dt * 7);
+  const tailT = moving && Math.abs(vx) > 0.25 ? -Math.sign(vx) * clamp(8 + Math.abs(vx) * 3, 8, 15) : (cat.tailX < 0 ? -10 : 10);
+  cat.tailX += (tailT - cat.tailX) * Math.min(1, dt * 4); cat.tailW = Math.sin(G.t * 3.2) * 2 + Math.sin(G.t * 1.7 + 1) * 1.1;
+  const liftT = 10 + Math.sin(G.t * 2.2) * 1.8 + cat.move * 1.5 - tension * 3;
+  cat.lift += (liftT - cat.lift) * Math.min(1, dt * 6);
+  const ax = clamp((vx - cat.pvx) * idt, -40, 40); cat.pvx = vx;
+  cat.swingV += (-46 * cat.swing - 3.2 * cat.swingV + ax * 0.06 + Math.sin(G.t * 1.8) * 0.5) * dt; cat.swing = clamp(cat.swing + cat.swingV * dt, -0.6, 0.6);
+  cat.flick = flickAt(G.t) * (tension > 0.3 ? 0.75 + 0.25 * Math.abs(Math.sin(G.t * 29)) : 1);
+  cat.happyT = Math.max(0, (cat.happyT || 0) - dt);
+  cat.mood = cat.happyT > 0 ? "happy" : tension > 0.35 ? "worried" : "";
+  cat.look += (cat.dir * 1.3 - cat.look) * Math.min(1, dt * 8); cat.lookY += (clamp(vy * 0.5, -1.2, 1.0) - cat.lookY) * Math.min(1, dt * 6);
   cat.blinkT -= dt; if (cat.blinkT < 0) { cat.blinkT = 2 + Math.random() * 3.5; cat.blinkS = 0; }
   if (cat.blinkS != null) { cat.blinkS += dt; cat.blink = Math.sin(clamp(cat.blinkS / 0.16, 0, 1) * Math.PI); if (cat.blinkS > 0.16) { cat.blinkS = null; cat.blink = 0; } }
-  cat.earT -= dt; if (cat.earT < 0) { cat.earT = 2.5 + Math.random() * 4; if (Math.random() < 0.5) cat.ear = 1; else cat.ear2 = 1; }
-  cat.ear = Math.max(0, cat.ear - dt * 5); cat.ear2 = Math.max(0, cat.ear2 - dt * 5);
+  cat.endX = ART.lanX(cat.dir);
   cat.moving = moving;
   return sp;
 }
@@ -335,7 +341,9 @@ function updatePlay(dt) {
     let t = G.target;
     if (!t) {
       t = activeTarget();
-      if (S.pen) { const st = lv.strokes[S.si], c = st.checks[S.ci]; t = pointAtArc(st, Math.min(S.s + 0.6, c.arc)); }
+      if (S.pen) { const st = lv.strokes[S.si], c = st.checks[S.ci]; t = pointAtArc(st, Math.min(S.s + 0.6, c.arc));
+        // auto-pilot (test bot) only: if knocked off the route, first return to the active section so it can't deadlock against the leash
+        const qa = nearestOnStroke(st, cat.x, cat.y, Math.max(0, S.s - 0.5), c.arc); if (qa && qa.d > 0.32) t = qa; }
     }
     const dx = t.x - cat.x, dy = t.y - cat.y, d = hyp(dx, dy);
     if (d > 0.02) { const sp = Math.min(MAXV, d * 8); vx = dx / d * sp; vy = dy / d * sp; }
@@ -371,10 +379,15 @@ function updatePlay(dt) {
   S.tension += (tension - S.tension) * Math.min(1, dt * 10);
   const sp = animCat(cat, dt, mvx, mvy, S.tension);
   AU.setTension(S.tension > 0.12 ? S.tension : 0);
-  if (S.tension > 0.35) hintOnce("tension", "线绷紧了…往回走走看", 2200);
+  if (S.tension > 0.35) hintOnce("tension", "灯线绷紧了…往回飘一飘", 2200);
   S.hapT -= dt; if (S.tension > 0.45 && S.hapT <= 0) { S.hapT = 0.4; haptic(12); }
   cat.dustT -= dt;
-  if ((sp > 1.5 || S.tension > 0.4) && cat.dustT <= 0) { cat.dustT = S.tension > 0.4 ? 0.06 : 0.12; dust(cat.x - (cat.vx > 0 ? 0.08 : -0.08), cat.y + 0.01, S.tension > 0.4 ? 2 : 1, S.tension > 0.4 ? 0.4 : 0.2); }
+  if ((sp > 1.5 || S.tension > 0.4) && cat.dustT <= 0) { cat.dustT = S.tension > 0.4 ? 0.07 : 0.14; dust(cat.x - (cat.vx > 0 ? 0.08 : -0.08), cat.y + 0.01, S.tension > 0.4 ? 2 : 1, S.tension > 0.4 ? 0.35 : 0.18); }
+  // spark trail behind the lantern + embers drifting off the newest thread
+  cat.emberT -= dt * (0.6 + sp * 2.2 + S.tension * 5);
+  if (cat.emberT <= 0) { cat.emberT = 0.18; const lx = cat.x + ART.lanX(cat.dir) * ART.GK, ly = cat.y - (cat.lift + 6) * ART.GK; ember(lx - cat.vx * 0.03, ly, 1, 0.9); }
+  if (S.pen) { const r = S.ropes[S.si], n = r ? r.p.length : 0;
+    if (n > 6 && Math.random() < dt * (3 + 22 * S.tension)) { const q = r.p[n - 2 - ((Math.random() * Math.min(n - 3, 32)) | 0)]; ember(q.x, q.y - 0.008, S.tension > 0.3 ? 1.6 : 0.7, 0.8); } }
   cat.stepT -= dt * sp; if (cat.stepT < 0) { cat.stepT = 0.28; AU.step(); }
 
   // ---- validation (route progress & ordered bell checkpoints) ----
@@ -427,7 +440,7 @@ function updatePlay(dt) {
   const kc = 1 - Math.exp(-dt * 4.5); S.cam.x += (tx - S.cam.x) * kc; S.cam.y += (ty - S.cam.y) * kc;
   updateParts(dt); updateWind(dt, S.cam, z); record(dt);
 }
-function ropeEnd(cat) { return { x: cat.x + (cat.face === "side" ? (cat.flip ? 0.05 : -0.05) : 0), y: cat.y + (cat.face === "back" ? 0.02 : -0.005) }; }
+function ropeEnd(cat) { return { x: cat.x + ART.lanX(cat.dir || 0) * ART.GK, y: cat.y - 0.004 }; }
 function stepRopes(dt) {
   const e = ropeEnd(S.cat);
   S.ropes.forEach((r, i) => { if (!r) return; if (r.attached) r.step(dt, e.x, e.y, S.lv.grid); else if ((r.settle = (r.settle ?? 1.5) - dt) > 0) r.step(dt, 0, 0, S.lv.grid); });
@@ -436,7 +449,7 @@ function record(dt) {
   S.recAcc += dt; const lv = S.lv, c = S.cat;
   while (S.recAcc >= 1 / 30) {
     S.recAcc -= 1 / 30;
-    lv.frames.push([c.x, c.y, S.cam.x, S.cam.y, S.si, S.ci, S.pen ? 1 : 0, 0, c.face === "side" ? 0 : c.face === "front" ? 1 : 2, c.walk, S.allDone ? 1 : 0, S.s, c.flip ? 1 : 0, c.move]);
+    lv.frames.push([c.x, c.y, S.cam.x, S.cam.y, S.si, S.ci, S.pen ? 1 : 0, 0, 0, c.walk, S.allDone ? 1 : 0, S.s, c.dir, c.move]);
     if ((lv.frames.length - 1) % 3 === 0) lv.snaps.push({ f: lv.frames.length - 1, r: S.ropes.map(r => { if (!r) return null; if (!r.attached && r.settle <= 0) return r._snap || (r._snap = r.snapshot()); return r.snapshot(); }) });
   }
 }
@@ -467,6 +480,8 @@ function renderWorld(lv, V) {
   const glowA = at ? (0.45 + 0.55 * clamp((2.6 - da) / 1.4, 0, 1)) * (0.85 + 0.15 * Math.sin(t * 5)) : 0;
   const red = fx.red || 0;
   // yarn on the ground (under props); during the reveal it is drawn on top instead
+  // the lantern's warm light pool on the grass
+  if (!fx.hideCat && !fx.dark) ART.drawLampPool(ctx, V.cat.x + ART.lanX(V.anim.dir || 0) * ART.GK, V.cat.y, V.anim.flick == null ? 1 : V.anim.flick, 1 - (fx.catFade || 0));
   if (!fx.dark) drawRopes(lv, V, fx);
   // y-sorted props
   const items = [];
@@ -492,16 +507,17 @@ function renderWorld(lv, V) {
     for (let si = 0; si < lv.strokes.length; si++) {
       const st = lv.strokes[si], b = st.start; if (!inV(b.x, b.y, v)) continue;
       const P = V.ropes[si];
-      if (P) { const rem = clamp(1 - flatLen(P) / strokeBudget(st), 0.12, 1); items.push([b.y - 0.01, () => { ctx.globalAlpha = 1 - hideProps; ART.drawBall(ctx, b.x, b.y, 0.04 + 0.07 * Math.sqrt(rem), t, { rot: flatLen(P) * 3 }); ctx.globalAlpha = 1; }]); }
+      // stroke start = a little pumpkin candle the thread is lit from (wax melts as the thread is paid out)
+      if (P) { const rem = clamp(1 - flatLen(P) / strokeBudget(st), 0.12, 1); items.push([b.y - 0.01, () => { ctx.globalAlpha = 1 - hideProps; ART.drawCandle(ctx, b.x, b.y, t, { melt: rem, lit: 1 }); ctx.globalAlpha = 1; }]); }
       else if (si === V.si && !V.pen && !V.allDone) {
-        const rl = V.live && S.ballRoll >= 0 ? S.ballRoll : 0, roll = Math.sin(rl * 5) * Math.exp(-rl * 0.6) * 0.06 + Math.sin(t * 2.4) * 0.008;
-        items.push([b.y, () => ART.drawBall(ctx, b.x + roll, b.y - Math.abs(Math.sin(t * 3)) * 0.02, 0.11, t, { glow: glowA, rot: roll * 20 })]);
+        const rl = V.live && S.ballRoll >= 0 ? S.ballRoll : 0, roll = Math.sin(rl * 5) * Math.exp(-rl * 0.6) * 0.03;
+        items.push([b.y, () => ART.drawCandle(ctx, b.x + roll, b.y, t, { glow: glowA, bounce: Math.abs(Math.sin(t * 3)) * 0.012, lit: 1 })]);
       }
     }
-    if (V.allDone || (fx.reveal && false)) items.push([lv.basket.y, () => ART.drawBasket(ctx, lv.basket, t, at && at.type === "basket" ? glowA : 0)]);
+    if (V.allDone || (fx.reveal && false)) items.push([lv.basket.y, () => ART.drawBigPumpkin(ctx, lv.basket, t, at && at.type === "basket" ? glowA : 0)]);
   }
-  if (!fx.hideCat) items.push([V.cat.y + 0.001, () => { ctx.globalAlpha = 1 - (fx.catFade || 0); ART.drawCat(ctx, V.cat.x, V.cat.y, V.anim); ctx.globalAlpha = 1;
-    if (V.live && S.tension > 0.3) ART.strain(ctx, V.cat.x + (V.anim.flip ? -0.16 : 0.16), V.cat.y - 0.3, S.tension, G.t, V.anim.flip); }]);
+  if (!fx.hideCat) items.push([V.cat.y + 0.001, () => { ctx.globalAlpha = 1 - (fx.catFade || 0); ART.drawGhost(ctx, V.cat.x, V.cat.y, V.anim, V.anim.k); ctx.globalAlpha = 1;
+    if (V.live && S.tension > 0.3) ART.strain(ctx, V.cat.x + (V.anim.dir < 0 ? -0.14 : 0.14), V.cat.y - 0.33, S.tension, G.t, V.anim.dir < 0); }]);
   // dust under everything else
   for (const p of parts) if (p.k === "dust") ART.drawParticle(ctx, p, z);
   items.sort((a, b) => a[0] - b[0]); for (const it of items) it[1]();
@@ -509,7 +525,7 @@ function renderWorld(lv, V) {
   for (let si = 0; si < lv.strokes.length; si++) {
     const P = V.ropes[si]; if (!P || !(si < V.si || V.allDone)) continue;
     const kn = V.live ? S.knots.find(k => k.si === si) : null, n = P.length;
-    if (!fx.dark) ART.drawKnot(ctx, P[n - 2], P[n - 1] + 0.01, kn ? kn.t * 2.5 : 1, red > 0.5);
+    if (!fx.dark) ART.drawTie(ctx, P[n - 2], P[n - 1], kn ? kn.t * 2.5 : 1, red > 0.5 ? 1 : 0);
   }
   for (const p of parts) if (p.k !== "dust") ART.drawParticle(ctx, p, z);
   if (!far) for (const w of winds) ART.drawWindStreak(ctx, w);
@@ -527,10 +543,10 @@ function renderWorld(lv, V) {
   return at;
 }
 function drawRopes(lv, V, fx) {
-  const red = fx.red || 0, glow = fx.glow || 0, w = lerp(0.032, Math.max(0.07, 7.5 / V.z), red);
-  if (glow > 0 && fx.snap != null) {
+  const red = fx.red || 0, glow = fx.glow || 0, w = lerp(Math.max(0.014, 1.6 / V.z), Math.max(0.06, 6.5 / V.z), red);
+  if (glow > 0 && fx.snap != null) { // bloom
     ctx.globalCompositeOperation = "lighter";
-    for (const st of lv.strokes) for (let a = 0; a <= st.L; a += 0.35) { const p = pointAtArc(st, a); ART.spr(ctx, ART.SPR.glowR, p.x, p.y, 0.75, 0.75, 0.13 * glow); }
+    for (const st of lv.strokes) for (let a = 0; a <= st.L; a += 0.35) { const p = pointAtArc(st, a); ART.spr(ctx, ART.SPR.lamp, p.x, p.y, 0.8, 0.8, 0.2 * glow); }
     ctx.globalCompositeOperation = "source-over";
   }
   for (let si = 0; si < lv.strokes.length; si++) {
@@ -542,7 +558,7 @@ function drawRopes(lv, V, fx) {
       P = new Float32Array(N * 2); for (let i = 0; i < N * 2; i++) P[i] = lerp(a[i], c[si][i], e);
     }
     const live = V.live && S.ropes[si] && S.ropes[si].attached;
-    ART.drawYarn(ctx, P, { w, red, glow, t: G.t, tension: live ? Math.max(S.tension, S.ropes[si].tension * 0.4) : 0, vibFrom: live ? S.ropes[si].lastPin() : 0, noShadow: fx.dark > 0.5, noFuzz: fx.snap != null });
+    ART.drawEmber(ctx, P, { w, lit: red, glow, t: G.t, tension: live ? Math.max(S.tension, S.ropes[si].tension * 0.4) : 0, vibFrom: live ? S.ropes[si].lastPin() : 0, live, boost: fx.boost || 0, seg: fx.snap != null ? 0.1 : SEG });
   }
 }
 function ropesNow() { return S.ropes.map(r => r ? r.snapshot() : null); }
@@ -575,11 +591,11 @@ function drawHUD() {
     const shown = S.allDone ? 0 : rem;
     ctx.lineCap = "round"; ctx.lineWidth = 4.5; ctx.strokeStyle = "rgba(90,70,40,.12)"; ctx.beginPath(); ctx.arc(cx, cy, R0 + 5, 0, 6.283); ctx.stroke();
     const low = S.tension > 0.3;
-    ctx.strokeStyle = low ? `rgb(${230},${110 + 40 * Math.sin(t * 12)},70)` : "#e6b648"; ctx.beginPath(); ctx.arc(cx, cy, R0 + 5, -Math.PI / 2, -Math.PI / 2 + 6.283 * Math.max(0.001, shown)); ctx.stroke();
+    ctx.strokeStyle = low ? `rgb(${240},${100 + 50 * Math.sin(t * 12)},50)` : "#f09a3a"; ctx.beginPath(); ctx.arc(cx, cy, R0 + 5, -Math.PI / 2, -Math.PI / 2 + 6.283 * Math.max(0.001, shown)); ctx.stroke();
     ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(cx, cy, R0 + 5, -Math.PI / 2, -Math.PI / 2 + 6.283 * Math.max(0.001, shown)); ctx.stroke();
-    const r = S.allDone ? 7 : 7 + 11 * Math.sqrt(rem);
-    ART.drawBall(ctx, cx, cy + r * 0.85, r, t, { rot: (rope ? rope.length() : 0) * 3 });
+    ART.drawHUDCandle(ctx, cx, cy, S.allDone ? 0.15 : rem, t, low, false);
   } else {
+    ART.drawHUDCandle(ctx, cx, cy, 0, t, false, true);
     ctx.setLineDash([3, 4]); ctx.strokeStyle = "#c9a56b"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(cx, cy, 12 + Math.sin(t * 4) * 1.5, 0, 6.283); ctx.stroke(); ctx.setLineDash([]);
   }
   ctx.restore();
@@ -600,7 +616,9 @@ function drawFinger() {
   ctx.fillStyle = "rgba(255,255,255,.6)"; ctx.beginPath(); ctx.arc(input.x, input.y, 3, 0, 6.283); ctx.fill();
 }
 function catAnimFromFrame(f, t) {
-  return { face: ["side", "front", "back"][f[8]], flip: !!f[12], walk: f[9], move: f[13], t, blink: 0, ear: 0, ear2: 0, tail: Math.sin(f[9] * 0.25) * 0.35, sq: 0, lean: 0, carry: !!f[6], tilt: 0 };
+  const dir = +f[12] || 0, mv = f[13] || 0;
+  return { t, dir, move: mv, flip: dir < 0, blink: 0, lift: 10 + Math.sin(t * 2.2) * 1.8 + mv * 1.5, tailX: mv > 0.3 && Math.abs(dir) > 0.2 ? -Math.sign(dir) * 12 : 10, tailW: Math.sin(t * 3.2) * 2,
+    swing: Math.sin(t * 1.8) * 0.1, flick: flickAt(t), lean: dir * mv * 0.12, look: dir * 1.3, sq: 0, carry: !!f[6], endX: ART.lanX(dir), mood: "" };
 }
 
 // ---------- reveal ----------
@@ -647,9 +665,9 @@ function renderReveal() {
   else if (R.phase === "rewind") { V = frameView(lv, (1 - R.t / R.durs[R.li]) * (n - 1)); V.z = Z; fx.reveal = false; }
   else {
     const f0 = frameView(lv, 0), full = { x: 2 * LS, y: 3 * LS + 0.1 }, fz = fullZ();
-    if (R.phase === "pull") { const e = ease(clamp(R.t / 1.4, 0, 1)); V = f0; V.cam = { x: lerp(f0.cam.x, full.x, e), y: lerp(f0.cam.y, full.y, e) }; V.z = Z * Math.pow(fz / Z, e); }
+    if (R.phase === "pull") { const e = ease(clamp(R.t / 1.4, 0, 1)); V = f0; V.cam = { x: lerp(f0.cam.x, full.x, e), y: lerp(f0.cam.y, full.y, e) }; V.z = Z * Math.pow(fz / Z, e); fx.boost = 0.2 * e; }
     else {
-      if (R.phase === "replay") { V = frameView(lv, (R.t / 1.6) * (n - 1)); }
+      if (R.phase === "replay") { V = frameView(lv, (R.t / 1.6) * (n - 1)); fx.boost = 0.25 + 0.6 * clamp(R.t / 1.6, 0, 1); } // embers reignite along the path
       else {
         V = frameView(lv, n - 1); V.ropes = finalRopes(lv);
         const t = R.phase === "snap" ? R.t : 2.8;
@@ -736,19 +754,19 @@ function renderWord(dt) {
     const cx = it.x + 2 * it.s, cy = it.y + 3 * it.s;
     ctx.save(); ctx.translate(cx, cy); ctx.scale(s, s); ctx.translate(-2, -3); ctx.globalAlpha = appear;
     ctx.globalCompositeOperation = "lighter";
-    for (const st of letter.strokes) for (let a = 0; a <= st.L; a += 0.5) { const p = pointAtArc(st, a); ART.spr(ctx, ART.SPR.glowR, p.x, p.y, 1.7, 1.7, 0.16 * appear); }
+    for (const st of letter.strokes) for (let a = 0; a <= st.L; a += 0.5) { const p = pointAtArc(st, a); ART.spr(ctx, ART.SPR.lamp, p.x, p.y, 1.8, 1.8, 0.24 * appear); }
     ctx.globalCompositeOperation = "source-over";
-    for (const st of letter.strokes) ART.drawYarn(ctx, ptsToFlat(st.pts), { w: 0.52, red: 1, glow: 0.9 + 0.1 * Math.sin(t * 2.5 + it.gi), t, noShadow: true, noFuzz: true });
-    for (const st of letter.strokes) ART.drawKnot(ctx, st.end.x, st.end.y, 1, true);
+    for (const st of letter.strokes) ART.drawEmber(ctx, ptsToFlat(st.pts), { w: 0.42, lit: 1, glow: 0.9 + 0.1 * Math.sin(t * 2.5 + it.gi), t });
+    for (const st of letter.strokes) ART.drawTie(ctx, st.end.x, st.end.y, 1, 1, 10);
     ctx.restore(); ctx.globalAlpha = 1;
     if (appear >= 1 && Math.random() < dt * 6) { const st = letter.strokes[(Math.random() * letter.strokes.length) | 0], p = st.pts[(Math.random() * st.pts.length) | 0]; WD.sp.push({ x: cx + (p.x - 2) * it.s, y: cy + (p.y - 3) * it.s, t: 0, s: 3 + Math.random() * 5 }); }
     lastBox = it;
   }
   for (let i = WD.sp.length - 1; i >= 0; i--) { const p = WD.sp[i]; p.t += dt; if (p.t > 1.2) { WD.sp.splice(i, 1); continue; } const a = Math.sin(p.t / 1.2 * Math.PI); ctx.fillStyle = `rgba(255,236,200,${a})`; ART.star(ctx, p.x, p.y - p.t * 8, p.s * a, 0.2, p.t); }
   const catA = clamp((t - 0.4 - L.length * 0.35) / 0.8, 0, 1);
-  if (catA > 0) { ctx.globalAlpha = catA; ART.drawSleepingCat(ctx, W * 0.5, H * 0.905, Math.min(2.4, W / 160), t); ART.bubble(ctx, W * 0.5 + 44, H * 0.905 - 50 - ((t * 0.4) % 1) * 14, 1, "z", catA * (1 - (t * 0.4) % 1), "#ffe7c4", 14); ctx.globalAlpha = 1; }
+  if (catA > 0) { const gs = Math.min(1.85, W / 210), gy = H * 0.962, gx = W * 0.8; ctx.globalAlpha = catA; ART.drawSleepingGhost(ctx, gx, gy, gs, t); ctx.globalAlpha = 1; ART.bubble(ctx, gx + 22 * gs, gy - 64 * gs - ((t * 0.4) % 1) * 14, 1, "z", catA * (1 - (t * 0.4) % 1), "#ffe7c4", 14); }
   const doneLetters = 0.2 + L.length * 0.35 + 0.9;
-  const msg = G.msg || (G.fromShare ? "" : "这是小猫替你绕出来的字");
+  const msg = G.msg || (G.fromShare ? "" : "这是小幽灵替你点亮的字");
   if (t > doneLetters) {
     const n = Math.min([...msg].length, Math.floor((t - doneLetters) * 12));
     if (n !== WD.typed) { WD.typed = n; $("msg").textContent = [...msg].slice(0, n).join(""); if (n % 2 === 1) AU.tone(1200, 0.03, { vol: 0.03 }); }
@@ -792,15 +810,16 @@ function showStart() {
   G.mode = "start"; $("start").classList.add("show");
   const n = G.levels.length;
   if (G.fromShare) { $("startSub").textContent = `有人给你做了个小游戏，一共 ${n} 关`; $("startSub2").textContent = G.msg ? "通关以后，TA 有一句话要对你说" : "通关以后有个小惊喜"; }
-  else { $("startSub").textContent = "小猫在院子里玩毛线"; $("startSub2").textContent = `一共 ${n} 关 · 玩完有个小惊喜`; }
+  else { $("startSub").textContent = "小幽灵提着南瓜灯，在院子里找铃铛"; $("startSub2").textContent = `一共 ${n} 关 · 玩完有个小惊喜`; }
 }
 $("startBtn").addEventListener("click", () => { AU.init(); $("start").classList.remove("show"); startLevel(0); });
 let titleCat = null;
 function renderTitle(dt) {
   G.t += dt;
   const lv = G.levels[0], p = lv.strokes[0].start;
-  if (!titleCat) titleCat = Object.assign(newCat(p.x - 0.3, p.y + 0.03, { x: 1, y: 0 }), {});
-  const c = titleCat; animCat(c, dt, 0, 0, 0); c.t = G.t; c.carry = false;
+  if (!titleCat) titleCat = Object.assign(newCat(p.x - 0.4, p.y + 0.03, { x: 1, y: 0 }), {});
+  const c = titleCat; animCat(c, dt, 0, 0, 0); c.t = G.t; c.carry = false; c.k = ART.GK * 1.45; c.dirT = 0.45;
+  if (!c.happyT && Math.sin(G.t * 0.5) > 0.97) c.happyT = 1.2; // little smile now and then
   const cam = { x: p.x - 0.12 + Math.sin(G.t * 0.12) * 0.12, y: p.y - 0.42 + Math.cos(G.t * 0.1) * 0.06 };
   const fakeS = S; S = S || { lv, gust: 0 };
   if (!winds.length || Math.random() < dt * 0.6) { if (winds.length < 4) winds.push({ x: cam.x - 0.9 + Math.random() * 1.2, y: cam.y - 1.2 + Math.random() * 2.2, L: 0.6 + Math.random() * 0.6, ph: Math.random() * 6, dir: Math.random() < 0.5 ? 1 : -1, t: 0, dur: 2.2 }); }
@@ -856,6 +875,7 @@ window.__game = {
   setTarget(x, y) { G.target = x == null ? null : { x, y }; },
   start() { $("startBtn").click(); },
   encodeShare, decodeShare, buildLevel, routeDist(x, y) { const lv = S.lv; return Math.min(...lv.strokes.map(s => nearestOnStroke(s, x, y, 0, 1e9).d)); },
+  screenOf(x, y) { const z = G.mode === "play" ? playZ() : Z; return screenPos(x, y, S.cam, z); },
   perfReset() { G.perf = { n: 0, sum: 0, max: 0, cpu: 0 }; }, get perf() { return G.perf; },
 };
 

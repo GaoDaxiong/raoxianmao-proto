@@ -1,5 +1,5 @@
-// 绕线猫 v2 — verlet yarn rope. One Rope per stroke. Particle 0 is pinned at the yarn ball; the last particle
-// follows the cat's mouth. Yarn is paid out at the cat end; posts/spools are circle colliders the rope wraps around.
+// 南瓜灯小幽灵 v3 (from 绕线猫 v2) — verlet rope (drawn as the lantern ember thread). One Rope per stroke. Particle 0 is pinned at the start candle; the last particle
+// follows the ghost's lantern. Thread is paid out at the ghost end; posts/spools are circle colliders the rope wraps around.
 // Ringing a bell pins the rope to that post (so it visibly stays wrapped). The sim is for feel only:
 // route validation lives in game.js and never depends on rope state.
 class Rope {

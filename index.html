@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#2c5f4c">
-<meta name="rxm-version" content="v2-zelda-rope">
-<title>绕线猫</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%A7%B6%3C/text%3E%3C/svg%3E">
+<meta name="theme-color" content="#2c3f4c">
+<meta name="rxm-version" content="v3-pumpkin-ghost">
+<title>南瓜灯小幽灵</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%8E%83%3C/text%3E%3C/svg%3E">
 <style>
   :root{--ink:#4e3a26;--gold:#e2a644;--cream:#fffaf0;--font:-apple-system,"PingFang SC","Hiragino Sans GB","Noto Sans CJK SC","Source Han Sans SC","Microsoft YaHei",sans-serif;}
   html,body{margin:0;height:100%;overflow:hidden;background:#24473b;font-family:var(--font);-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased;}
@@ -27,8 +27,8 @@
   .orn i{display:block;width:46px;height:1px;background:linear-gradient(90deg,transparent,rgba(120,85,40,.7));}
   .orn i:last-child{transform:scaleX(-1);}
   .orn b{width:6px;height:6px;transform:rotate(45deg);border:1px solid rgba(120,85,40,.8);}
-  #start h1{margin:10px 0 4px;font-size:58px;font-weight:900;letter-spacing:.32em;text-indent:.32em;color:#fffdf4;
-    text-shadow:0 2px 0 #c58a48,0 3px 1px rgba(120,70,30,.35),0 8px 22px rgba(70,50,20,.4),0 0 40px rgba(255,232,170,.75);}
+  #start h1{margin:10px 0 4px;font-size:42px;font-weight:900;letter-spacing:.14em;text-indent:.14em;color:#fffdf4;white-space:nowrap;
+    text-shadow:0 2px 0 #d07a32,0 3px 1px rgba(140,60,20,.35),0 8px 22px rgba(70,40,20,.4),0 0 40px rgba(255,190,110,.8);}
   .tag{font-size:12px;letter-spacing:.42em;text-indent:.42em;color:#5d4226;font-weight:700;padding:5px 14px;border-radius:999px;background:rgba(255,250,232,.55);border:1px solid rgba(170,130,70,.3);}
   .foot{display:flex;flex-direction:column;align-items:center;animation:rise 1s .4s ease both;}
   #startSub{margin:0 24px 4px;font-size:16px;color:#fff8ea;font-weight:600;letter-spacing:.12em;text-shadow:0 1px 6px rgba(0,0,0,.45);}
@@ -55,7 +55,7 @@
   /* reveal word */
   #word{justify-content:flex-start;padding-top:61vh;pointer-events:none;color:#fff2e4;background:transparent;}
   #word > *{pointer-events:auto;}
-  #msg{min-height:34px;font-size:19px;line-height:1.7;margin:0 28px 6px;white-space:pre-wrap;font-weight:600;letter-spacing:.12em;text-shadow:0 0 18px rgba(255,140,110,.55),0 1px 2px rgba(0,0,0,.4);}
+  #msg{min-height:34px;font-size:19px;line-height:1.7;margin:0 28px 6px;white-space:pre-wrap;font-weight:600;letter-spacing:.12em;text-shadow:0 0 18px rgba(255,160,80,.6),0 1px 2px rgba(0,0,0,.4);}
   #from{font-size:13px;opacity:.6;margin-bottom:8px;}
   #wordBtns{margin-top:4px;opacity:0;transition:opacity .8s;display:flex;flex-direction:column;align-items:center;pointer-events:none;}
   #wordBtns.show{opacity:1;pointer-events:auto;}
@@ -88,12 +88,12 @@
 
 <div id="start" class="ov">
   <div class="crest">
-    <div class="orn"><i></i><b></b><span>YARN · CAT</span><b></b><i></i></div>
-    <h1>绕线猫</h1>
+    <div class="orn"><i></i><b></b><span>PUMPKIN · GHOST</span><b></b><i></i></div>
+    <h1>南瓜灯小幽灵</h1>
     <div class="tag">铃铛会带路</div>
   </div>
   <div class="foot">
-    <p id="startSub">小猫在院子里玩毛线</p>
+    <p id="startSub">小幽灵提着南瓜灯，在院子里找铃铛</p>
     <p id="startSub2"></p>
     <button class="btn pulse" id="startBtn">开始</button>
   </div>
@@ -111,7 +111,7 @@
 <div id="custom" class="ov">
   <div class="orn"><i></i><b></b><i></i></div>
   <h2>写一个词送给 TA</h2>
-  <div class="sub">TA 要先陪小猫玩完，才会看到你写的字</div>
+  <div class="sub">TA 要先陪小幽灵玩完，才会看到你点亮的字</div>
   <div class="card">
     <label>你想写的词 · 字母 A-Z、空格，最多 8 个</label>
     <div class="row"><input id="wIn" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="I♥U"><button id="heartBtn">♥</button></div>
@@ -135,10 +135,11 @@
 </div>
 <div id="toast"></div>
 
-<script src="js/strokes.js?v=2.0"></script>
-<script src="js/audio.js?v=2.0"></script>
-<script src="js/rope.js?v=2.0"></script>
-<script src="js/art.js?v=2.0"></script>
-<script src="js/game.js?v=2.0"></script>
+<script src="js/strokes.js?v=3.0"></script>
+<script src="js/audio.js?v=3.0"></script>
+<script src="js/rope.js?v=3.0"></script>
+<script src="js/art.js?v=3.0"></script>
+<script src="js/ghost.js?v=3.0"></script>
+<script src="js/game.js?v=3.0"></script>
 </body>
 </html>

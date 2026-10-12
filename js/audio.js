@@ -1,4 +1,4 @@
-// 绕线猫 v2 — synthesized sound kit (WebAudio, no samples). Starts after first user gesture.
+// 南瓜灯小幽灵 v3 (from 绕线猫 v2) — synthesized sound kit (WebAudio, no samples). Starts after first user gesture.
 const AU = {
   ctx: null, master: null, bus: null, wet: null, tens: null, muted: false, musicOn: false,
   _lastCreak: 0, _lastClunk: 0,
@@ -103,7 +103,7 @@ const AU = {
     o.connect(f); f.connect(g); g.connect(this.bus); o.start(t); l.start(t); o.stop(t + 0.8); l.stop(t + 0.8);
   },
   woof() { this.tone(300, 0.1, { type: "sawtooth", vol: 0.05, slide: 0.65 }); },
-  step() { this.noise(0.05, { freq: 900 + Math.random() * 400, q: 1.5, vol: 0.012 }); },
+  step() { this.noise(0.03, { freq: 3200 + Math.random() * 1800, q: 3, vol: 0.006 }); }, // faint ember crackle (ghost floats, no footsteps)
   clear() { [1047, 1319, 1568, 2093].forEach((f, i) => this.bell(f, 0.12, 0, i * 0.1, 1.1)); },
   snap() { this.tone(110, 0.5, { type: "triangle", vol: 0.28, slide: 3.5 }); this.tone(660, 0.35, { vol: 0.08, when: 0.05, slide: 0.7 }); this.noise(0.3, { freq: 3000, q: 0.7, vol: 0.06, slide: 0.3 }); },
   rewind(dur) { if (!this.ctx) return; for (let i = 0; i < dur * 14; i++) this.tone(900 - (i % 7) * 70, 0.05, { type: "square", vol: 0.018, when: i / 14 }); this.noise(dur, { freq: 2000, q: 0.5, vol: 0.03, slide: 0.4, attack: 0.1 }); },

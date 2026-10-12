@@ -1,4 +1,4 @@
-// 绕线猫 v2 — painterly cel-shaded rendering kit (Canvas 2D). All assets are procedural & original.
+// 南瓜灯小幽灵 (v3, from 绕线猫 v2) — painterly cel-shaded rendering kit (Canvas 2D). All assets are procedural & original.
 const ART = (() => {
 "use strict";
 const TAU = Math.PI * 2;
@@ -359,9 +359,9 @@ function drawPost(ctx, p, o) {
   if (o.wrapped) {
     for (let k = 0; k < Math.min(2, o.wrapped); k++) {
       const yy = -0.018 - k * 0.016;
-      ctx.strokeStyle = o.red ? "#9d1f1f" : "#bba684"; ctx.lineWidth = 0.022; ctx.beginPath(); ctx.ellipse(0, yy, r + 0.006, ry + 0.004, 0, 0.05, Math.PI - 0.05); ctx.stroke();
-      ctx.strokeStyle = o.red ? "#e8463c" : "#f3e7cd"; ctx.lineWidth = 0.015; ctx.beginPath(); ctx.ellipse(0, yy, r + 0.006, ry + 0.004, 0, 0.1, Math.PI - 0.1); ctx.stroke();
-      ctx.strokeStyle = o.red ? "rgba(255,170,150,.7)" : "rgba(255,255,255,.7)"; ctx.lineWidth = 0.004; ctx.beginPath(); ctx.ellipse(0, yy - 0.004, r + 0.004, ry, 0, 0.5, 1.6); ctx.stroke();
+      // ember thread loop: faint smoky amber in play, glowing gold when reignited
+      ctx.strokeStyle = o.red ? "#f07a22" : "rgba(122,80,56,.3)"; ctx.lineWidth = o.red ? 0.016 : 0.012; ctx.beginPath(); ctx.ellipse(0, yy, r + 0.006, ry + 0.004, 0, 0.05, Math.PI - 0.05); ctx.stroke();
+      ctx.strokeStyle = o.red ? "#ffd27a" : "rgba(240,165,96,.45)"; ctx.lineWidth = o.red ? 0.008 : 0.005; ctx.beginPath(); ctx.ellipse(0, yy, r + 0.006, ry + 0.004, 0, 0.1, Math.PI - 0.1); ctx.stroke();
     }
   }
   // front grass around base
@@ -443,7 +443,7 @@ function drawSpool(ctx, p, o) {
   // spin streak when fast
   const sp = Math.min(1, Math.abs(o.spin || 0) / 8);
   if (sp > 0.1) { ctx.strokeStyle = `rgba(255,250,230,${sp * 0.7})`; ctx.lineWidth = 0.005; ctx.beginPath(); ctx.ellipse(0, ty, R * 0.92, ry * 0.92, 0, (o.rot || 0), (o.rot || 0) + 1.2 * Math.sign(o.spin)); ctx.stroke(); }
-  if (o.wrapped) { ctx.strokeStyle = o.red ? "#e8463c" : "#f3e7cd"; ctx.lineWidth = 0.016; ctx.beginPath(); ctx.ellipse(0, -0.06, cr + 0.008, cr * 0.42 + 0.004, 0, 0.1, Math.PI - 0.1); ctx.stroke(); }
+  if (o.wrapped) { ctx.strokeStyle = o.red ? "#ffb347" : "rgba(240,165,96,.4)"; ctx.lineWidth = o.red ? 0.012 : 0.007; ctx.beginPath(); ctx.ellipse(0, -0.06, cr + 0.008, cr * 0.42 + 0.004, 0, 0.1, Math.PI - 0.1); ctx.stroke(); }
   ctx.restore();
 }
 // yarn ball (cel shaded sphere + winding arcs)
