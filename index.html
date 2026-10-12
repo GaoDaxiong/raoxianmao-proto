@@ -4,51 +4,99 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#2c5f4c">
+<meta name="rxm-version" content="v2-zelda-rope">
 <title>绕线猫</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%A7%B6%3C/text%3E%3C/svg%3E">
 <style>
-  html,body{margin:0;height:100%;overflow:hidden;background:#cfe8b4;font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
+  :root{--ink:#4e3a26;--gold:#e2a644;--cream:#fffaf0;--font:-apple-system,"PingFang SC","Hiragino Sans GB","Noto Sans CJK SC","Source Han Sans SC","Microsoft YaHei",sans-serif;}
+  html,body{margin:0;height:100%;overflow:hidden;background:#24473b;font-family:var(--font);-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased;}
   canvas{position:fixed;left:0;top:0;width:100%;height:100%;touch-action:none;display:block;}
-  .ov{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;z-index:5;}
-  .ov.show{display:flex;}
-  #start{background:linear-gradient(#fdf6e9,#f6e7cf);color:#6b4a32;}
-  #start h1{font-size:40px;margin:0 0 10px;letter-spacing:6px;}
-  #start p{margin:4px 24px;font-size:16px;opacity:.85;line-height:1.6;}
-  .btn{margin-top:26px;padding:13px 34px;border-radius:30px;border:none;background:#f29a5b;color:#fff;font-size:18px;font-weight:600;box-shadow:0 4px 0 #d77a3c;font-family:inherit;}
-  .btn:active{transform:translateY(2px);box-shadow:0 2px 0 #d77a3c;}
-  .btn.ghost{background:transparent;color:inherit;box-shadow:none;border:1.5px solid currentColor;opacity:.8;font-weight:500;font-size:15px;padding:9px 22px;margin-top:12px;}
-  #hint{position:fixed;left:0;right:0;bottom:calc(46px + env(safe-area-inset-bottom));text-align:center;z-index:4;pointer-events:none;transition:opacity .8s;opacity:0;}
-  #hint span{display:inline-block;background:rgba(255,250,240,.88);color:#6b4a32;padding:9px 18px;border-radius:20px;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,.08);}
-  #word{justify-content:flex-start;padding-top:62vh;pointer-events:none;color:#fbe9d8;background:transparent;}
+  .ov{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;text-align:center;z-index:5;}
+  .ov.show{display:flex;animation:fadeIn .6s ease both;}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @keyframes shimmer{0%,100%{opacity:.55}50%{opacity:1}}
+  @keyframes bob{0%,100%{box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 -2px 0 rgba(150,80,20,.35) inset,0 8px 22px rgba(40,30,10,.35),0 0 0 4px rgba(255,248,226,.28)}50%{box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 -2px 0 rgba(150,80,20,.35) inset,0 8px 22px rgba(40,30,10,.35),0 0 0 9px rgba(255,248,226,.12),0 0 30px rgba(255,220,140,.6)}}
+  /* title */
+  #start{justify-content:space-between;padding:calc(9vh + env(safe-area-inset-top)) 0 calc(9vh + env(safe-area-inset-bottom));box-sizing:border-box;pointer-events:none;
+    background:linear-gradient(180deg,rgba(255,246,214,.55) 0%,rgba(255,246,214,0) 34%,rgba(20,40,40,0) 62%,rgba(16,34,36,.55) 100%);}
+  #start > *{pointer-events:auto;}
+  .crest{display:flex;flex-direction:column;align-items:center;animation:rise 1s .1s ease both;}
+  .orn{display:flex;align-items:center;gap:10px;color:rgba(110,80,40,.75);font-size:11px;letter-spacing:.5em;font-weight:600;}
+  .orn i{display:block;width:46px;height:1px;background:linear-gradient(90deg,transparent,rgba(120,85,40,.7));}
+  .orn i:last-child{transform:scaleX(-1);}
+  .orn b{width:6px;height:6px;transform:rotate(45deg);border:1px solid rgba(120,85,40,.8);}
+  #start h1{margin:10px 0 4px;font-size:58px;font-weight:900;letter-spacing:.32em;text-indent:.32em;color:#fffdf4;
+    text-shadow:0 2px 0 #c58a48,0 3px 1px rgba(120,70,30,.35),0 8px 22px rgba(70,50,20,.4),0 0 40px rgba(255,232,170,.75);}
+  .tag{font-size:12px;letter-spacing:.42em;text-indent:.42em;color:#5d4226;font-weight:700;padding:5px 14px;border-radius:999px;background:rgba(255,250,232,.55);border:1px solid rgba(170,130,70,.3);}
+  .foot{display:flex;flex-direction:column;align-items:center;animation:rise 1s .4s ease both;}
+  #startSub{margin:0 24px 4px;font-size:16px;color:#fff8ea;font-weight:600;letter-spacing:.12em;text-shadow:0 1px 6px rgba(0,0,0,.45);}
+  #startSub2{margin:0 24px;font-size:13px;color:rgba(255,248,234,.82);letter-spacing:.1em;text-shadow:0 1px 6px rgba(0,0,0,.45);}
+  .btn{position:relative;margin-top:22px;padding:15px 50px;border-radius:999px;border:1px solid rgba(255,240,200,.9);font-family:inherit;font-size:18px;font-weight:800;letter-spacing:.32em;text-indent:.32em;cursor:pointer;
+    color:#fff;background:linear-gradient(180deg,#f8cd72 0%,#eda447 55%,#d98634 100%);text-shadow:0 1px 0 rgba(140,70,20,.5);
+    box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 -2px 0 rgba(150,80,20,.35) inset,0 8px 22px rgba(40,30,10,.35),0 0 0 4px rgba(255,248,226,.28);transition:transform .12s;}
+  .btn:active{transform:translateY(2px) scale(.98);}
+  .btn::before,.btn::after{content:"";position:absolute;top:50%;width:6px;height:6px;margin-top:-3px;transform:rotate(45deg);background:rgba(255,255,255,.85);}
+  .btn::before{left:20px}.btn::after{right:20px}
+  .btn.ghost{background:rgba(255,252,244,.12);color:inherit;border:1px solid currentColor;box-shadow:none;font-weight:600;font-size:14px;letter-spacing:.2em;padding:10px 26px;margin-top:12px;text-shadow:none;opacity:.85;}
+  .btn.ghost::before,.btn.ghost::after,.btn.small::before,.btn.small::after{display:none}
+  .pulse{animation:bob 2.4s ease-in-out infinite;}
+  /* HUD bits */
+  #muteBtn{position:fixed;top:calc(16px + env(safe-area-inset-top));right:14px;width:42px;height:42px;border-radius:50%;z-index:8;border:1px solid rgba(190,150,90,.35);
+    background:rgba(255,252,244,.82);box-shadow:0 4px 14px rgba(20,40,30,.25);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;}
+  #muteBtn svg{width:20px;height:20px;}
+  #muteBtn .x{display:none}#muteBtn.off .x{display:inline}#muteBtn.off .w{display:none}
+  #hint{position:fixed;left:0;right:0;bottom:calc(40px + env(safe-area-inset-bottom));text-align:center;z-index:4;pointer-events:none;opacity:0;transform:translateY(8px);transition:opacity .6s,transform .6s;}
+  #hint.show{opacity:1;transform:none;}
+  #hint span{display:inline-flex;align-items:center;gap:10px;background:rgba(255,252,244,.92);color:var(--ink);padding:10px 20px 10px 16px;border-radius:999px;font-size:14.5px;font-weight:600;letter-spacing:.08em;
+    border:1px solid rgba(200,160,90,.45);box-shadow:0 6px 20px rgba(20,40,30,.22);}
+  #hint span::before{content:"";width:7px;height:7px;transform:rotate(45deg);background:var(--gold);box-shadow:0 0 8px rgba(255,200,90,.9);animation:shimmer 1.6s infinite;}
+  /* reveal word */
+  #word{justify-content:flex-start;padding-top:61vh;pointer-events:none;color:#fff2e4;background:transparent;}
   #word > *{pointer-events:auto;}
-  #msg{min-height:34px;font-size:19px;line-height:1.7;margin:0 28px 6px;white-space:pre-wrap;}
+  #msg{min-height:34px;font-size:19px;line-height:1.7;margin:0 28px 6px;white-space:pre-wrap;font-weight:600;letter-spacing:.12em;text-shadow:0 0 18px rgba(255,140,110,.55),0 1px 2px rgba(0,0,0,.4);}
   #from{font-size:13px;opacity:.6;margin-bottom:8px;}
-  #wordBtns{margin-top:10px;opacity:0;transition:opacity .8s;display:flex;flex-direction:column;align-items:center;}
-  #custom{background:linear-gradient(#fdf6e9,#f3e2c6);color:#6b4a32;justify-content:flex-start;padding-top:calc(48px + env(safe-area-inset-top));overflow-y:auto;}
-  #custom h2{margin:0 0 6px;font-size:24px;}
-  #custom .sub{font-size:14px;opacity:.7;margin-bottom:20px;}
-  .card{background:#fffaf2;border-radius:18px;padding:16px;width:min(86vw,360px);box-sizing:border-box;box-shadow:0 3px 12px rgba(120,80,40,.1);text-align:left;margin-bottom:14px;}
-  .card label{font-size:13px;opacity:.7;display:block;margin-bottom:6px;}
+  #wordBtns{margin-top:4px;opacity:0;transition:opacity .8s;display:flex;flex-direction:column;align-items:center;pointer-events:none;}
+  #wordBtns.show{opacity:1;pointer-events:auto;}
+  /* customize (parchment) */
+  #custom{color:var(--ink);justify-content:flex-start;padding-top:calc(40px + env(safe-area-inset-top));overflow-y:auto;
+    background:radial-gradient(120% 70% at 50% 0%,#fffdf6 0%,#f8edd4 55%,#efdcb6 100%);}
+  #custom::before{content:"";position:fixed;inset:10px;border:1px solid rgba(170,130,70,.35);border-radius:22px;pointer-events:none;}
+  #custom h2{margin:8px 0 6px;font-size:24px;font-weight:900;letter-spacing:.24em;text-indent:.24em;}
+  #custom .sub{font-size:13px;opacity:.7;margin-bottom:20px;letter-spacing:.06em;}
+  .card{background:rgba(255,255,255,.72);border-radius:18px;padding:16px;width:min(86vw,360px);box-sizing:border-box;border:1px solid rgba(200,160,100,.35);
+    box-shadow:0 1px 0 #fff inset,0 8px 24px rgba(120,80,30,.12);text-align:left;margin-bottom:14px;}
+  .card label{font-size:12px;opacity:.7;display:block;margin-bottom:8px;letter-spacing:.12em;font-weight:700;}
   .row{display:flex;gap:8px;align-items:center;}
-  #wIn{flex:1;font-size:24px;letter-spacing:4px;text-transform:uppercase;padding:8px 10px;border:2px solid #ecd6b8;border-radius:12px;background:#fff;color:#c2402f;font-family:inherit;min-width:0;}
-  #heartBtn{font-size:22px;width:46px;height:46px;border-radius:12px;border:2px solid #f2b5a8;background:#fff0ec;color:#e0403a;}
-  #mIn{width:100%;box-sizing:border-box;font-size:16px;padding:8px 10px;border:2px solid #ecd6b8;border-radius:12px;resize:none;height:76px;font-family:inherit;}
+  #wIn{flex:1;font-size:26px;font-weight:800;letter-spacing:6px;text-transform:uppercase;padding:8px 12px;border:1.5px solid #e8d2ad;border-radius:12px;background:#fffdf8;color:#d0392f;font-family:inherit;min-width:0;outline:none;}
+  #wIn:focus,#mIn:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(226,166,68,.2);}
+  #heartBtn{font-size:22px;width:48px;height:48px;border-radius:12px;border:1.5px solid #f2b5a8;background:#fff0ec;color:#e0403a;}
+  #mIn{width:100%;box-sizing:border-box;font-size:16px;padding:10px 12px;border:1.5px solid #e8d2ad;border-radius:12px;resize:none;height:78px;font-family:inherit;background:#fffdf8;color:var(--ink);outline:none;}
   .cnt{font-size:12px;opacity:.55;text-align:right;margin-top:4px;}
   #linkBox{display:none;}
-  #link{width:100%;box-sizing:border-box;font-size:13px;padding:8px;border:1.5px dashed #e5c9a3;border-radius:10px;background:#fff;color:#7a5a40;}
-  #toast{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);background:rgba(60,40,30,.85);color:#fff;padding:10px 20px;border-radius:12px;font-size:15px;z-index:20;display:none;}
+  #link{width:100%;box-sizing:border-box;font-size:13px;padding:9px;border:1.5px dashed #e0c08f;border-radius:10px;background:#fffdf8;color:#7a5a40;}
+  #toast{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);background:rgba(40,34,30,.86);color:#fff;padding:11px 22px;border-radius:999px;font-size:15px;z-index:20;opacity:0;transition:opacity .3s;pointer-events:none;letter-spacing:.06em;}
+  #toast.show{opacity:1;}
   .err{color:#d0453a;font-size:13px;min-height:18px;margin-top:4px;}
 </style>
 </head>
 <body>
 <canvas id="cv"></canvas>
 <div id="hint"><span id="hintText"></span></div>
+<button id="muteBtn" aria-label="声音"><svg viewBox="0 0 24 24" fill="none" stroke="#6b4e2e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h3l5-4v14l-5-4H4z" fill="#f0c56e"/><path class="w" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/><path class="x" d="M16 9l5 6M21 9l-5 6"/></svg></button>
 
 <div id="start" class="ov">
-  <h1>绕线猫</h1>
-  <p id="startSub">小猫在院子里玩毛线</p>
-  <p id="startSub2" style="font-size:14px;opacity:.65"></p>
-  <button class="btn" id="startBtn">开始</button>
+  <div class="crest">
+    <div class="orn"><i></i><b></b><span>YARN · CAT</span><b></b><i></i></div>
+    <h1>绕线猫</h1>
+    <div class="tag">铃铛会带路</div>
+  </div>
+  <div class="foot">
+    <p id="startSub">小猫在院子里玩毛线</p>
+    <p id="startSub2"></p>
+    <button class="btn pulse" id="startBtn">开始</button>
+  </div>
 </div>
 
 <div id="word" class="ov">
@@ -61,24 +109,25 @@
 </div>
 
 <div id="custom" class="ov">
+  <div class="orn"><i></i><b></b><i></i></div>
   <h2>写一个词送给 TA</h2>
   <div class="sub">TA 要先陪小猫玩完，才会看到你写的字</div>
   <div class="card">
-    <label>你想写的词（字母 A-Z、空格，最多 8 个）</label>
+    <label>你想写的词 · 字母 A-Z、空格，最多 8 个</label>
     <div class="row"><input id="wIn" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="I♥U"><button id="heartBtn">♥</button></div>
     <div class="err" id="wErr"></div>
   </div>
   <div class="card">
-    <label>想说的话（可选）</label>
+    <label>想说的话 · 可选</label>
     <textarea id="mIn" maxlength="40" placeholder="比如：生日快乐！"></textarea>
     <div class="cnt"><span id="mCnt">0</span>/40</div>
   </div>
   <button class="btn" id="genBtn">生成分享链接</button>
-  <div class="card" id="linkBox" style="margin-top:16px">
+  <div class="card" id="linkBox" style="margin-top:18px">
     <label>把这个链接发给 TA</label>
     <input id="link" readonly>
     <div class="row" style="margin-top:10px;justify-content:center;gap:10px">
-      <button class="btn" id="copyBtn" style="margin-top:0;padding:10px 22px;font-size:16px">复制链接</button>
+      <button class="btn small" id="copyBtn" style="margin-top:0;padding:11px 26px;font-size:15px;letter-spacing:.16em">复制链接</button>
       <button class="btn ghost" id="tryBtn" style="margin-top:0">自己先玩</button>
     </div>
   </div>
@@ -86,8 +135,10 @@
 </div>
 <div id="toast"></div>
 
-<script src="js/strokes.js"></script>
-<script src="js/audio.js"></script>
-<script src="js/game.js"></script>
+<script src="js/strokes.js?v=2.0"></script>
+<script src="js/audio.js?v=2.0"></script>
+<script src="js/rope.js?v=2.0"></script>
+<script src="js/art.js?v=2.0"></script>
+<script src="js/game.js?v=2.0"></script>
 </body>
 </html>
