@@ -6,12 +6,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#2c3f4c">
 <meta name="screen-orientation" content="landscape"><meta name="x5-orientation" content="landscape"><meta name="x5-fullscreen" content="true"><meta name="full-screen" content="yes">
-<meta name="rxm-version" content="v4-wisps-joystick">
-<title>南瓜灯小幽灵</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%8E%83%3C/text%3E%3C/svg%3E">
+<meta name="rxm-version" content="v5-platformer-U">
+<title>团绒 · 风之谷</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%90%B0%3C/text%3E%3C/svg%3E">
 <style>
   :root{--sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);--sal:env(safe-area-inset-left,0px);--sar:env(safe-area-inset-right,0px);--ink:#4e3a26;--gold:#e2a644;--cream:#fffaf0;--font:-apple-system,"PingFang SC","Hiragino Sans GB","Noto Sans CJK SC","Source Han Sans SC","Microsoft YaHei",sans-serif;}
-  html,body{margin:0;height:100%;overflow:hidden;background:#24473b;font-family:var(--font);-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased;}
+  html,body{margin:0;height:100%;overflow:hidden;background:#86c8ec;font-family:var(--font);-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased;}
   #stage{position:fixed;left:0;top:0;width:100vw;height:100vh;transform-origin:0 0;overflow:hidden;}
   canvas{position:absolute;left:0;top:0;width:100%;height:100%;touch-action:none;display:block;}
   .ov{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;text-align:center;z-index:5;}
@@ -32,7 +32,7 @@
   .orn i:last-child{transform:scaleX(-1);}
   .orn b{width:6px;height:6px;transform:rotate(45deg);border:1px solid rgba(120,85,40,.8);}
   #start h1{margin:10px 0 4px;font-size:42px;font-weight:900;letter-spacing:.14em;text-indent:.14em;color:#fffdf4;white-space:nowrap;
-    text-shadow:0 2px 0 #d07a32,0 3px 1px rgba(140,60,20,.35),0 8px 22px rgba(70,40,20,.4),0 0 40px rgba(255,190,110,.8);}
+    text-shadow:0 2px 0 #6f9fd0,0 3px 1px rgba(140,60,20,.35),0 8px 22px rgba(70,40,20,.4),0 0 40px rgba(158,195,234,.9);}
   .tag{font-size:12px;letter-spacing:.42em;text-indent:.42em;color:#5d4226;font-weight:700;padding:5px 14px;border-radius:999px;background:rgba(255,250,232,.55);border:1px solid rgba(170,130,70,.3);}
   .foot{display:flex;flex-direction:column;align-items:center;animation:rise 1s .4s ease both;}
   #startSub{margin:0 0 4px;font-size:16px;color:#4a3420;text-shadow:0 1px 0 rgba(255,250,230,.7);font-weight:600;letter-spacing:.12em;text-shadow:0 1px 6px rgba(0,0,0,.45);}
@@ -60,7 +60,8 @@
   /* reveal word */
   #word{justify-content:flex-end;padding-bottom:calc(14px + var(--sab));box-sizing:border-box;pointer-events:none;color:#fff2e4;background:transparent;}
   #word > *{pointer-events:auto;}
-  #msg{min-height:30px;font-size:18px;line-height:1.6;margin:0 120px 2px;white-space:pre-wrap;font-weight:600;letter-spacing:.12em;text-shadow:0 0 18px rgba(255,160,80,.6),0 1px 2px rgba(0,0,0,.4);}
+  #msg .big{font-size:34px;font-weight:900;letter-spacing:.2em;color:#fff;text-shadow:0 0 24px rgba(158,195,234,.95),0 2px 0 #6f9fd0}#msg .hrt{color:#9ec3ea}
+  #msg{min-height:30px;font-size:18px;line-height:1.6;margin:0 120px 2px;white-space:pre-wrap;font-weight:600;letter-spacing:.12em;text-shadow:0 0 18px rgba(120,180,240,.7),0 1px 2px rgba(0,0,0,.4);}
   #from{font-size:13px;opacity:.6;margin-bottom:8px;}
   #wordBtns{margin-top:0;opacity:0;transition:opacity .8s;display:flex;flex-direction:row;align-items:center;gap:14px;pointer-events:none;}
   #wordBtns .btn{margin-top:4px;}
@@ -98,13 +99,13 @@
 
 <div id="start" class="ov">
   <div class="crest">
-    <div class="orn"><i></i><b></b><span>PUMPKIN · GHOST</span><b></b><i></i></div>
-    <h1>南瓜灯小幽灵</h1>
-    <div class="tag">迷路的小鬼火</div>
+    <div class="orn"><i></i><b></b><span>TUANRONG · WIND VALLEY</span><b></b><i></i></div>
+    <h1>团绒</h1>
+    <div class="tag">风之谷的小光点</div>
   </div>
   <div class="foot">
-    <p id="startSub">小幽灵提着南瓜灯，去接迷路的小鬼火回家</p>
-    <p id="startSub2"></p>
+    <p id="startSub">小幽灵提着南瓜灯，去接风之谷的小光点回家</p>
+    <p id="startSub2">跑、跳、按住滑翔 · 到终点有个小惊喜</p>
     <button class="btn pulse" id="startBtn">开始</button>
   </div>
 </div>
@@ -115,19 +116,16 @@
   <div id="wordBtns">
     <button class="btn" id="makeBtn">我也写一个</button>
     <button class="btn ghost" id="replayBtn">重看一遍</button>
+    <button class="btn ghost" id="againBtn">再玩一次</button>
   </div>
 </div>
 
 <div id="custom" class="ov">
   <div class="orn"><i></i><b></b><i></i></div>
   <h2>写一个词送给 TA</h2>
-  <div class="sub">TA 要先陪小幽灵玩完，才会看到你点亮的字</div>
+  <div class="sub">TA 要先陪团绒跑到终点，才会看到你点亮的字</div>
   <div class="cgrid">
-  <div class="card">
-    <label>你想写的词 · 字母 A-Z、空格，最多 8 个</label>
-    <div class="row"><input id="wIn" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="I♥U"><button id="heartBtn">♥</button></div>
-    <div class="err" id="wErr"></div>
-  </div>
+  <div class="card"><label>试玩关 · 团绒会替你跑出一个 U，揭晓时显示 I ❤ U</label><div style="font-size:30px;font-weight:900;letter-spacing:8px;color:#5f8fc4">I ❤ U</div></div>
   <div class="card">
     <label>想说的话 · 可选</label>
     <textarea id="mIn" maxlength="40" placeholder="比如：生日快乐！"></textarea>
@@ -147,12 +145,7 @@
 <div id="toast"></div>
 </div>
 
-<script src="js/strokes.js?v=4.0"></script>
-<script src="js/audio.js?v=4.0"></script>
-<script src="js/rope.js?v=4.0"></script>
-<script src="js/art.js?v=4.0"></script>
-<script src="js/ghost.js?v=4.0"></script>
-<script src="js/wisp.js?v=4.0"></script>
-<script src="js/game.js?v=4.0"></script>
+<script src="js/audio.js?v=5.0"></script>
+<script src="js/v5.js?v=5.0"></script>
 </body>
 </html>
