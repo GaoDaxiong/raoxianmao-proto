@@ -213,7 +213,7 @@ window.__game = {
   G, get S() { return S; }, get RV() { return RV; }, W: () => W, H: () => H, get stick() { return stick; }, BTN, get cam() { return cam; }, get fps() { return fpsA; },
   btnPos() { btnPos(); return BTN.map(b => ({ k: b.k, x: b.x, y: b.y, r: b.r })); }, toClient(x, y) { return ROT ? { x: H - y, y: x } : { x, y }; }, get rot() { return ROT; },
   start() { $("startBtn").click(); }, botOn(v) { G.botDrive = !!v; TR.botReset && TR.botReset(); }, botPlan() { return S && G.mode === "play" ? TR.botStep(S, true) : null; }, encodeShare, decodeShare,
-  set steps(v) { G.steps = v; }, overview(x, y, z) { G.overview = x == null ? null : { x, y, z }; }, teleport(x, y) { S.p.x = x; S.p.y = y; S.p.vx = S.p.vy = 0; S.p.ground = null; cam.x = x; cam.y = y; }, TR,
+  set steps(v) { G.steps = v; }, overview(x, y, z) { G.overview = x == null ? null : { x, y, z }; }, teleport(x, y, ab) { S.p.x = x; S.p.y = y; S.p.vx = S.p.vy = 0; S.p.ground = null; S.p.carry = null; if (ab !== undefined) S.ab = ab; cam.x = x; cam.y = y; TR.syncRoute && TR.syncRoute(); }, TR,
 };
 addEventListener("resize", resize); resize();
 TR.initArt(ctx); parseHash(); S = TR.newGame("U"); TR.buildEdges(S.L); TR.R.bgW = {};

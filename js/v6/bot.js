@@ -142,25 +142,26 @@ node("arena", [55, -12, 86, 9.9], () => {
   if (S.ab !== "bell") { go(79.2); return; }
   for (const f of Bs.puffs) if (hyp(f.x - p.x, f.y - p.y) < 2.4) act();
   const ringAt = (b, tx) => { if (hyp(b.x - p.x, b.y - p.y) < TR.PH.ringR) { act(); o.x = 0; return true; } go(tx, .3); return false; };
-  const st = [[76.5, 6.3], [72.5, 4.1], [68.5, 1.9], [64.5, -.3], [69.5, -2.5], [66.5, -4.7], [68.4, -6.9]].map(([x, y]) => plat(x, y));
-  const on = i => onPlat(st[i]), cx = i => (st[i].x0 + st[i].x1) / 2;
-  const hop = (i, j, dir) => { B.mem.aT = j; go(cx(j) + dir * .4, .3); if (p.ground && Math.abs(p.x - (cx(i) + dir * .7)) < .9) jump(); up(); };
+  const st = L.plats.filter(q => q.kind === "fog" || q.kind === "nest"); // A..I + nest, in climb order
+  const NEST = st.length - 1, on = i => onPlat(st[i]), cx = i => (st[i].x0 + st[i].x1) / 2;
+  let cur = -1; for (let i = 0; i < st.length; i++) if (on(i)) cur = i;
+  const hop = (i, j) => { B.mem.aT = j; const dir = Math.sign(cx(j) - cx(i)) || 1; go(cx(j), .3);
+    const edge = dir > 0 ? st[i].x1 - .5 : st[i].x0 + .5; if (p.ground && (dir > 0 ? p.x > edge - .9 : p.x < edge + .9)) jump(); up(); };
   if (!F[0].cleared) { ringAt(bells[0], 80.4); return; }
-  if (p.ground && p.y > 7.5) { B.mem.aT = 0; if (p.x < 72.5) { go(66); return; } go(77.4, .3); if (p.x < 79.5 && p.x > 76) jump(); up(); return; }
-  if (on(0)) { hop(0, 1, -1); return; }
-  if (on(1)) { hop(1, 2, -1); return; }
-  if (on(2)) { if (!F[1].cleared) { ringAt(bells[1], 69); return; } hop(2, 3, -1); return; }
-  if (on(3)) { hop(3, 4, 1); return; }
-  if (on(4)) { if (!F[2].cleared) { ringAt(bells[2], 71.6); return; } hop(4, 5, -1); return; }
-  if (!Bs.dead && F[2].cleared && (on(4) || on(5))) { const want = Bs.perch === 2 ? 4 : 5, inRange = hyp(Bs.x - p.x, Bs.y - p.y) < TR.PH.ringR + 1.5;
-    if (on(want)) { go(clamp(Bs.x, st[want].x0 + .5, st[want].x1 - .5), .4); if (inRange && Bs.inv <= 0) act(); return; }
-    if (inRange && Bs.inv <= 0) { act(); return; }
-    if (want === 4) { B.mem.aT = 4; go(71.5, .3); return; } hop(4, 5, -1); return; }
-  if (on(5)) { if (!Bs.dead) { o.x = 0; go(68.4, .4); if (hyp(Bs.x - p.x, Bs.y - p.y) < TR.PH.ringR + 1.6) act(); return; } B.mem.aT = 6; go(70.5, .3); if (p.ground) jump(); up(); return; }
-  if (on(6)) { go(70.5, .2); return; }
-  // airborne or fell: steer toward the next platform up
-  if (!p.ground && B.mem.aT != null && p.y < 7.6) { go(cx(B.mem.aT), .2); up(); return; }
-  if (!p.ground) { let best = null; for (let i = 0; i < 7; i++) { const q = st[i]; if (!TR.platOn(q)) continue; if (q.y > p.y - .2) { if (!best || q.y < best.y) best = q; } } if (best) go((best.x0 + best.x1) / 2, .3); up(); return; }
+  if (p.ground && p.y > 7.5) { B.mem.aT = 0; go(cx(0), .3); if (Math.abs(p.x - cx(0)) < 1.6) jump(); up(); return; }
+  if (!Bs.dead && F[2].cleared && cur >= 6) { // boss phase: stand on G(6), H(7) or I(8)
+    const want = Bs.perch === 2 ? 7 : 8, inRange = hyp(Bs.x - p.x, Bs.y - p.y) < TR.PH.ringR + 1.5;
+    if (inRange && Bs.inv <= 0) { act(); o.x = 0; return; }
+    if (cur === want) { go(clamp(Bs.x, st[want].x0 + .5, st[want].x1 - .5), .4); return; }
+    if (cur === 6) { hop(6, 7); return; }
+    if (cur === 8 && want === 7) { B.mem.aT = 7; go(70.2, .3); return; }
+    hop(cur, want); return; }
+  if (cur === 3 && !F[1].cleared) { ringAt(bells[1], 68.9); return; }
+  if (cur === 6 && !F[2].cleared) { ringAt(bells[2], 74.4); return; }
+  if (cur === 8 && Bs.dead) { hop(8, NEST); return; }
+  if (cur === NEST) { go(70.5, .2); return; }
+  if (cur >= 0 && cur < 8) { hop(cur, cur + 1); return; }
+  if (!p.ground && B.mem.aT != null) { go(cx(B.mem.aT), .2); up(); return; }
   go(70);
 });
 TR.botNodes = N;

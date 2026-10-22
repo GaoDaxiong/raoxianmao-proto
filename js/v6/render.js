@@ -459,6 +459,13 @@ TR.renderWorld = function (ctx, S, cam, z, opt, W, H, DPR, Zbase) {
   // vignette + motes
   const vg = ctx.createRadialGradient(W / 2, H / 2, H * .35, W / 2, H / 2, W * .7); vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(20,40,40,.26)"); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
   ctx.fillStyle = zc === "cave" ? "rgba(150,240,230,.5)" : "rgba(255,255,235,.6)"; for (let i = 0; i < 16; i++) { const x = ((i * 97.3 + t * 9 - cam.x * z * .6) % W + W) % W, y = ((i * 53.1 + Math.sin(t * .5 + i) * 20 - cam.y * z * .6) % H + H) % H; ctx.beginPath(); ctx.arc(x, y, 1 + (i % 3) * .5, 0, 7); ctx.fill(); }
+  // stuck helper arrow: a soft glowing chevron orbiting 团绒, pointing to the next spot (or the bell to ring)
+  const A = S.rs && S.rs.arrow; if (A && !opt.reveal) { const px = W / 2 + (p.x - cam.x) * z, py = H / 2 + (p.y - cam.y) * z, ang = Math.atan2(A.y - p.y, A.x - p.x), bob = Math.sin(t * 6) * .12;
+    const rr = z * (1.25 + bob), ax = px + Math.cos(ang) * rr, ay = py + Math.sin(ang) * rr, sz = z * .34;
+    ctx.save(); ctx.translate(ax, ay); ctx.rotate(ang); const g = ctx.createRadialGradient(0, 0, 0, 0, 0, sz * 2.2); g.addColorStop(0, A.bell ? "rgba(190,200,255,.75)" : "rgba(255,236,160,.75)"); g.addColorStop(1, "rgba(255,236,160,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, sz * 2.2, 0, 7); ctx.fill();
+    ctx.lineJoin = "round"; ctx.lineCap = "round"; ctx.strokeStyle = "rgba(90,70,40,.35)"; ctx.lineWidth = sz * .55; ctx.beginPath(); ctx.moveTo(-sz * .5, -sz * .8); ctx.lineTo(sz * .55, 0); ctx.lineTo(-sz * .5, sz * .8); ctx.stroke();
+    ctx.strokeStyle = A.bell ? "#e8ecff" : "#fff6d8"; ctx.lineWidth = sz * .36; ctx.stroke(); ctx.restore(); }
 };
 const PHr = () => TR.PH.lampR + .8;
 })(typeof window !== "undefined" ? window : globalThis);

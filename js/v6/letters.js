@@ -184,18 +184,19 @@ SEG.fogSummit = (B, o) => {
   B.plat(X(72.4), X(77.1), Y(8.5), "cloud"); // one-way cloud lid: bounce up through it, never fall back down
   B.wisp(X(79), Y(7.7), "bell");
   B.tip([X(72), Y(3), X(84), Y(8.5)], "铃耳！点「铃」摇响风铃，把大雾怪的雾吹散", "bell");
-  B.fog.push({ b: [X(61), Y(.6), X(79.5), Y(6.8)] }, { b: [X(61), Y(-4.4), X(79.5), Y(.6)] }, { b: [X(61), Y(-12), X(79.5), Y(-4.4)] });
-  B.bells.push({ x: X(81.4), y: Y(6.4), chunk: 0 }, { x: X(66), y: Y(.7), chunk: 1 }, { x: X(74.2), y: Y(-3.4), chunk: 2 });
-  B.plat(X(76.5), X(79), Y(6.3), "fog", { chunk: 0 }); B.plat(X(72.5), X(75), Y(4.1), "fog", { chunk: 0 }); B.plat(X(68.5), X(71), Y(1.9), "fog", { chunk: 0 });
-  B.plat(X(64.5), X(67), Y(-.3), "fog", { chunk: 1 }); B.plat(X(69.5), X(72), Y(-2.5), "fog", { chunk: 1 });
-  B.plat(X(66.5), X(69), Y(-4.7), "fog", { chunk: 2 });
-  B.plat(X(68.4), X(72.6), Y(-6.9), "nest", { chunk: 3 });
-  B.boss = { x: X(69.5), y: Y(-8.8), hx: X(69.5), hy: Y(-8.8) };
-  B.goal = { x: X(70.5), y: Y(-7.35), box: [X(68.4), Y(-10), X(72.6), Y(-6.85)] };
+  // v6.1: every step is at most ~1.5 units higher than the last, so a normal (bell-ears) jump reaches it with a big margin (max jump ≈ 2.5)
+  B.fog.push({ b: [X(61), Y(1.6), X(83), Y(7.6)] }, { b: [X(61), Y(-2.6), X(79.5), Y(1.6)] }, { b: [X(61), Y(-12), X(79.5), Y(-2.6)] });
+  B.bells.push({ x: X(81.4), y: Y(6.4), chunk: 0 }, { x: X(67.4), y: Y(-.2), chunk: 1 }, { x: X(74.6), y: Y(-3.6), chunk: 2 });
+  B.plat(X(78.6), X(80.8), Y(7.0), "fog", { chunk: 0 }); B.plat(X(75.4), X(77.6), Y(5.5), "fog", { chunk: 0 }); B.plat(X(72), X(74.4), Y(4.0), "fog", { chunk: 0 }); B.plat(X(68.4), X(70.8), Y(2.5), "fog", { chunk: 0 });
+  B.plat(X(64.4), X(66.6), Y(1.0), "fog", { chunk: 1 }); B.plat(X(68.6), X(71), Y(-.5), "fog", { chunk: 1 }); B.plat(X(72.6), X(75), Y(-2.0), "fog", { chunk: 1 });
+  B.plat(X(69), X(71.4), Y(-3.5), "fog", { chunk: 2 }); B.plat(X(65.4), X(67.8), Y(-5.0), "fog", { chunk: 2 });
+  B.plat(X(68.4), X(72.6), Y(-6.5), "nest", { chunk: 3 });
+  B.boss = { x: X(69.5), y: Y(-8.6), hx: X(69.5), hy: Y(-8.6) };
+  B.goal = { x: X(70.5), y: Y(-6.95), box: [X(68.4), Y(-9.6), X(72.6), Y(-6.45)] };
   B.props.push({ k: "pillar", x: X(57.5), y: Y(8.5) }, { k: "pillar", x: X(83), y: Y(8.5) }, { k: "post", x: X(81.4), y: Y(8.5) });
   for (let c = 0; c < 3; c++) B.fog[c].wisps = [];
   const fw = (c, x, y) => { const w = B.wisp(x, y); w.fog = c; };
-  fw(0, X(77.8), Y(5.3)); fw(0, X(73.8), Y(3.1)); fw(0, X(69.8), Y(.9)); fw(1, X(65.8), Y(-1.3)); fw(1, X(70.8), Y(-3.5)); fw(2, X(67.8), Y(-5.7));
+  fw(0, X(79.7), Y(6.1)); fw(0, X(76.5), Y(4.6)); fw(0, X(73.2), Y(3.1)); fw(0, X(69.6), Y(1.6)); fw(1, X(65.5), Y(.1)); fw(1, X(69.8), Y(-1.4)); fw(1, X(73.8), Y(-2.9)); fw(2, X(70.2), Y(-4.4)); fw(2, X(66.6), Y(-5.9));
 };
 // stubs used by the I / L recipes (layout only, not tuned yet)
 SEG.longGlide = (B, o) => { const X = v => o.x + v, Y = v => o.y + v; B.zones.push({ id: "glide", name: "长风原野", sub: "", r: [X(0), Y(-10), X(70), Y(14)] }); B.airBox(X(0), Y(-10), X(70), Y(8)); B.box(X(0), Y(8), X(70), Y(10), "rock", { grass: 1 }); };

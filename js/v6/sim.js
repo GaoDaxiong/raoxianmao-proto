@@ -8,7 +8,7 @@ const ON = (n, ...a) => { if (TR.on) TR.on(n, ...a); };
 const inR = (r, x, y) => x > r[0] && x < r[2] && y > r[1] && y < r[3];
 TR.inR = inR;
 const PH = TR.PH = { g: 36, maxFall: 15, jumpV: 13.4, run: 7.4, walk: 3.8, gAcc: 95, gDec: 150, aAcc: 60, glideFall: 3.2, umbFall: 1.0, coyote: .11, buffer: .13, r: .45,
-  springV: [15.8, 17.6, 19.2], slamV: 21.5, lampR: 3.6, flareR: 7, ringR: 3.8 };
+  springV: [15.8, 17.6, 19.2], slamV: 23, lampR: 3.6, flareR: 7, ringR: 3.8 };
 TR.ABIL = {
   drill: { name: "钻耳", btn: "钻", col: "#d9a35b", col2: "#a86e2e" },
   lamp: { name: "灯耳", btn: "灯", col: "#ffd76a", col2: "#e8a93a" },
@@ -81,6 +81,7 @@ function newGame(letter) {
     p: { x: L.start.x, y: L.start.y, vx: 0, vy: 0, gs: 0, ground: null, gn: { x: 0, y: -1 }, coyote: 0, buf: 0, abuf: 0, jumping: false, jumping0: false, glide: false, face: 1, sq: 1, sqv: 0,
       blink: 2, ear: 0, earV: 0, walk: 0, drop: 0, puffT: 0, airPuff: 1, hurt: 0, landT: 0, drill: 0, drillT: 0, slam: 0, chain: 0, chainT: 0, dash: 0, dashUsed: false, cool: 0, inCart: false, room: false, spin: 0 } };
   S.follow = []; // trailing wisp positions (render)
+  S.route = (TR.ROUTES && TR.ROUTES[letter || "U"]) || null; S.rs = { i: 0, max: 0, t: 0, inT: 9, arrow: null, said: 0, carries: 0 };
   return S;
 }
 TR.newGame = newGame;
@@ -109,6 +110,7 @@ function step(h, inp) {
   const p = S.p, L = S.L, r = PH.r, ab = S.ab;
   p.coyote -= h; p.buf -= h; p.drop -= h; p.hurt -= h; p.landT -= h; p.cool -= h; p.chainT -= h; if (p.dash > 0) p.dash -= h;
   if (p.inCart) { cartStep(h, inp); return; }
+  if (p.carry) { carryStep(h); return; }
   // environment
   let wx = 0, gey = null, cur = null;
   for (const w of L.winds) if (inR(w.r, p.x, p.y)) wx += w.vx;
@@ -254,14 +256,79 @@ TR.fx = (...a) => fx(...a);
 function update(dt, inp) {
   const p = S.p, L = S.L;
   if (inp.jq) p.buf = PH.buffer; if (inp.aq) p.abuf = 1;
+  if (Math.abs(inp.x || 0) > .2 || inp.jd || inp.aq || inp.jq) S.rs.inT = 0; else S.rs.inT += dt;
   // spring: ground-tap hop turns into a slam at the apex
   if (p.slamAt && !p.ground && p.vy > -1) { p.slamAt = 0; if (S.ab === "spring") { p.slam = 1; SFX("slam"); } }
   if (p.ground) p.slamAt = 0;
   const n = Math.max(1, Math.ceil(dt / (1 / 240))), h = dt / n;
   for (let i = 0; i < n; i++) { S.t += h; step(h, inp); if (S.done) break; }
-  world(dt);
+  world(dt); rescue(dt);
 }
 TR.update = update;
+// ---------- stuck helper: never let a player softlock ----------
+// Progress = furthest route checkpoint reached. If the player keeps trying (input in the last 2.5s) but makes no progress for 8s,
+// a glowing arrow points the way; after 12s a gentle warm wind carries 团绒 to the next safe standing spot.
+TR.rescueOff = false;
+const RS = { hintT: 8, carryT: 12 };
+TR.RS = RS;
+TR.syncRoute = () => { const R = S.route; if (!R) return; let bi = 0, bd = 1e9; R.forEach((c, i) => { const d = hyp(c[0] - S.p.x, c[1] - S.p.y); if (d < bd && cpOk(c)) { bd = d; bi = i; } }); S.rs.i = S.rs.max = bi; S.rs.t = 0; };
+function cpOk(c) { return S.L.fog.filter(f => f.cleared).length >= c[2] && (!c[3] || (S.boss && S.boss.dead)); }
+function rescue(dt) {
+  const R = S.route, p = S.p, rs = S.rs; if (!R || S.done || TR.rescueOff) return;
+  if (p.inCart || p.carry) { rs.t = 0; rs.arrow = null; }
+  // progress tracking (also while in the cart)
+  let best = rs.i; for (let j = rs.i + 1; j < Math.min(R.length, rs.i + 70); j++) if (hyp(R[j][0] - p.x, R[j][1] - p.y) < 1.7) best = j;
+  if (best > rs.i) { rs.i = best; if (best > rs.max) { rs.max = best; rs.t = 0; rs.arrow = null; return; } }
+  // knocked back / fell far below the furthest checkpoint: fall back to the nearest reachable checkpoint behind (keep the stuck timer running)
+  if (hyp(R[rs.i][0] - p.x, R[rs.i][1] - p.y) > 4) { let bj = -1, bd = 3.2; for (let j = rs.i; j >= Math.max(0, rs.i - 90); j--) { const d = hyp(R[j][0] - p.x, R[j][1] - p.y); if (d < bd && !R[j][4]) { bd = d; bj = j; } }
+    if (bj < 0 && R[rs.i][4] && !p.inCart) { bd = 1e9; for (let j = rs.i; j >= Math.max(0, rs.i - 120); j--) { const d = hyp(R[j][0] - p.x, R[j][1] - p.y); if (!R[j][4] && d < bd) { bd = d; bj = j; } } } // walked past the parked cart without boarding
+    if (bj >= 0) rs.i = bj; }
+  if (p.inCart || p.carry) return;
+  if (p.room) { rs.t = 0; rs.arrow = null; return; }
+  if (rs.inT < 2.5) rs.t += dt;
+  if (rs.t < RS.hintT) { rs.arrow = null; return; }
+  // where should they go next?
+  if (rs.i >= R.length - 1) { rs.arrow = null; return; }
+  let k = rs.i + 1; while (k < R.length - 1 && k < rs.i + 4 && cpOk(R[k + 1]) && !R[k + 1][4]) k++;
+  const nxt = R[Math.min(rs.i + 1, R.length - 1)];
+  if (!cpOk(nxt)) { // blocked by fog: point at the nearest unrung bell
+    let bb = null; for (const b of S.L.bells) if (!b.rung && (!bb || hyp(b.x - p.x, b.y - p.y) < hyp(bb.x - p.x, bb.y - p.y))) bb = b;
+    if (bb) { rs.arrow = { x: bb.x, y: bb.y, bell: 1 }; if (rs.said !== 2) { rs.said = 2; ON("hint", S.ab === "bell" ? "靠近亮着的风铃，点「铃」把雾吹开" : "先去拿铃耳，再摇响风铃", 3200); } }
+    else if (S.boss && !S.boss.dead) { rs.arrow = { x: S.boss.x, y: S.boss.y, bell: 1 }; if (rs.said !== 3) { rs.said = 3; ON("hint", "靠近大雾怪，点「铃」！", 3000); } }
+    if (rs.t < RS.carryT || !rs.arrow) return;
+    // carry right next to the bell (or the boss) and hover there a few seconds so one tap of 「铃」 is enough
+    const A = rs.arrow; p.carry = { pts: [{ x: A.x + (p.x < A.x ? -1.1 : 1.1), y: A.y + .4 }], k: 0, hold: 4, bell: 1 }; p.ground = null; p.drill = 0; p.slam = 0; p.dash = 0;
+    rs.t = 0; rs.arrow = null; rs.said = 0; rs.carries++; SFX("whoosh"); ON("hint", S.ab === "bell" ? "暖风把你送到了风铃旁——快点「铃」！" : "先去拿铃耳哦", 3000); return;
+  }
+  rs.arrow = R[rs.i + 1][4] && S.cart && S.cart.st === "park" ? { x: S.cart.x, y: S.cart.y } : { x: R[k][0], y: R[k][1] };
+  if (rs.said !== 1) { rs.said = 1; ON("hint", "卡住了吗？跟着发光的小箭头走～", 3000); }
+  if (rs.t < RS.carryT) return;
+  // carry: follow checkpoints until a standing spot at least 2 ahead (max 14), never past an unmet requirement or into the cart track
+  const pts = []; let blocked = false; const upTo = Math.max(rs.i, rs.max) + 2; // after a knock-down, bring them back to the furthest point they had reached (and a bit beyond)
+  for (let j = rs.i + 1; j < Math.min(R.length, upTo + 13); j++) { const c = R[j]; if (c[4]) { const Cc = S.cart; if (Cc && Cc.st === "park") { pts.push({ x: Cc.x, y: Cc.y }); break; } pts.push({ x: c[0], y: c[1] }); continue; } /* into the parked cart (boards on touch); after the ride fly along the track */ if (!cpOk(c)) { blocked = true; break; } pts.push({ x: c[0], y: c[1] }); if (j >= upTo && c[5]) break; }
+  let hold = 0; if (blocked) { const e = pts.length ? pts[pts.length - 1] : p; let bb = null; for (const b of S.L.bells) if (!b.rung && (!bb || hyp(b.x - e.x, b.y - e.y) < hyp(bb.x - e.x, bb.y - e.y))) bb = b;
+    const tg = bb || (S.boss && !S.boss.dead ? S.boss : null); if (tg) { pts.push({ x: tg.x + (e.x < tg.x ? -1.1 : 1.1), y: tg.y + .4 }); hold = 4; } }
+  if (!pts.length) return;
+  p.carry = { pts, k: 0, hold }; p.ground = null; p.drill = 0; p.slam = 0; p.dash = 0; rs.t = 0; rs.arrow = null; rs.said = 0; rs.carries++;
+  SFX("whoosh"); ON("hint", "一阵暖暖的风把团绒托了起来～", 2600);
+}
+function carryStep(h) {
+  const p = S.p, C = p.carry;
+  if (p.abuf > 0) { p.abuf = 0; action(); }
+  if (C.k < C.pts.length) {
+    const q = C.pts[C.k], dx = q.x - p.x, dy = q.y - p.y, d = hyp(dx, dy), sp = 5.5 * h;
+    if (d <= sp) { p.x = q.x; p.y = q.y; C.k++; } else { p.x += dx / d * sp; p.y += dy / d * sp; }
+    p.vx = dx / (d || 1) * 5.5; p.vy = dy / (d || 1) * 5.5; p.glide = true; p.face = dx > .05 ? 1 : dx < -.05 ? -1 : p.face;
+    if (Math.random() < h * 18) fx("wind", p.x - p.vx * .08, p.y + .3, 1);
+  } else if (C.hold > 0) { // hover next to the bell / boss until it is rung (max a few seconds)
+    C.hold -= h; const e = C.pts[C.pts.length - 1]; p.vx = p.vy = 0; p.x = e.x; p.y = e.y + Math.sin(S.t * 3) * .1; p.glide = true;
+    const waiting = S.L.bells.some(b => !b.rung && hyp(b.x - p.x, b.y - p.y) < 2.5) || (S.boss && !S.boss.dead && S.L.fog.every(f => f.cleared) && S.boss.inv <= 0 && hyp(S.boss.x - p.x, S.boss.y - p.y) < 3.5);
+    if (!waiting) C.hold = 0;
+  }
+  if (C.k >= C.pts.length && !(C.hold > 0)) { p.carry = null; p.vx = 0; p.vy = 0; p.ground = null; p.jumping0 = true; p.coyote = .25; p.glide = false; }
+  S.tAcc += h; if (S.tAcc > 1 / 30) { S.tAcc = 0; S.trail.push({ x: p.x, y: p.y, t: S.t, side: 0 }); }
+}
+
 function world(dt) {
   const p = S.p, L = S.L, t = S.t;
   // zones + rooms + tips
@@ -294,7 +361,7 @@ function world(dt) {
     if (hyp(p.x - w.x, p.y - w.y) < .95) { w.got = 1; w.rt = 0; const prev = S.ab; S.ab = w.ab; p.drill = 0; p.slam = 0; SFX("ability", w.ab); fx("spark", w.x, w.y, 16); ON("ability", w.ab, prev); } }
   for (const g of L.gems) if (!g.got && hyp(p.x - g.x, p.y - g.y) < .9) { g.got = 1; S.gems++; SFX("gem"); fx("spark", g.x, g.y, 14); ON("hint", `找到隐藏的蓝绒球！（${S.gems}/${S.gemTotal}）`, 2400); }
   // minecart boarding
-  const C = S.cart; if (C && C.st === "park" && !p.inCart) { const q = railAt(L.rail, C.s); C.x = q.x; C.y = q.y - .42; C.ang = 0; if (hyp(p.x - C.x, p.y - C.y) < 1.2) { p.inCart = true; C.st = "ride"; C.v = 3; p.drill = 0; SFX("clunk"); } }
+  const C = S.cart; if (C && C.st === "park" && !p.inCart) { const q = railAt(L.rail, C.s); C.x = q.x; C.y = q.y - .42; C.ang = 0; if (hyp(p.x - C.x, p.y - C.y) < 1.2) { p.inCart = true; p.carry = null; C.st = "ride"; C.v = 3; p.drill = 0; SFX("clunk"); } }
   // icicles
   for (const i of L.icicles) { i.t += dt;
     if (i.st === "hang" && Math.abs(p.x - i.x) < 1.4 && p.y > i.y && p.y - i.y < 4.5) { i.st = "shake"; i.t = 0; SFX("crack"); }
@@ -342,10 +409,10 @@ function world(dt) {
     if (B.dead) { B.popT += dt; }
     else { const inArena = p.y < 9 && p.x > 55;
       B.inv = Math.max(0, B.inv - dt);
-      const allClear = L.fog.every(f => f.cleared), PER = [[B.hx, B.hy], [B.hx - 4.7, B.hy + 2.3], [B.hx + 6, B.hy + 4]];
+      const allClear = L.fog.every(f => f.cleared), PER = [[B.hx, B.hy], [B.hx - 4.7, B.hy + 2.3], [B.hx + 4.5, B.hy + 3.6]];
       const tx = (allClear ? PER[B.perch][0] : B.hx) + Math.sin(B.t * .5) * (allClear ? .8 : 2), ty = (allClear ? PER[B.perch][1] : B.hy) + Math.sin(B.t * .9) * .5;
       const k = 1 - Math.exp(-dt * 2.2); B.x += (tx - B.x) * k; B.y += (ty - B.y) * k;
-      if (inArena && S.ab === "bell") { B.puffT -= dt; if (B.puffT <= 0) { B.puffT = 3.4 - B.hits * .3 - (3 - B.hp) * .35; const a = Math.atan2(p.y - B.y, p.x - B.x); B.puffs.push({ x: B.x + Math.cos(a) * 1.4, y: B.y + Math.sin(a) * 1.4, vx: Math.cos(a) * 2.4, vy: Math.sin(a) * 2.4, t: 0 }); SFX("fogpuff"); } } }
+      if (inArena && S.ab === "bell" && hyp(B.x - p.x, B.y - p.y) < 9.5) { B.puffT -= dt; if (B.puffT <= 0) { B.puffT = 3.4 - B.hits * .3 - (3 - B.hp) * .35; const a = Math.atan2(p.y - B.y, p.x - B.x); B.puffs.push({ x: B.x + Math.cos(a) * 1.4, y: B.y + Math.sin(a) * 1.4, vx: Math.cos(a) * 2.4, vy: Math.sin(a) * 2.4, t: 0 }); SFX("fogpuff"); } } }
     for (const f of B.puffs) { f.t += dt; f.x += f.vx * dt; f.y += f.vy * dt; if (hyp(f.x - p.x, f.y - p.y) < .9) { f.dead = 1; if (p.hurt <= 0) { const k = S.got; hurt(Math.sign(f.vx) || 1, "fog"); } } if (f.t > 5) f.dead = 1; }
     B.puffs = B.puffs.filter(f => !f.dead); }
   for (const b of L.bells) b.sw = Math.max(0, b.sw - dt * .6);
